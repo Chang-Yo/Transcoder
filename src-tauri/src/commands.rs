@@ -1,15 +1,37 @@
 use crate::error::{CmdError, TranscodeError};
-use crate::ffmpeg::{self, transcode, validator};
+use crate::ffmpeg::{self, transcode, validator, FfmpegSource};
 use crate::models::{BatchTranscodeRequest, FfmpegAvailability, MediaMetadata, TranscodeRequest};
 use tauri::Window;
 
 /// Check if ffmpeg and ffprobe are available on the system
 #[tauri::command]
 pub async fn check_ffmpeg_available() -> Result<FfmpegAvailability, CmdError> {
+    let ffmpeg_ok = validator::find_ffmpeg().is_ok();
+    let ffprobe_ok = validator::find_ffprobe().is_ok();
+
+    // Get the FFmpeg source for notification
+    let ffmpeg_source = if ffmpeg_ok {
+        match crate::ffmpeg::locator::get_ffmpeg_path_with_source() {
+            Ok((_path, source)) => Some(source_to_string(source)),
+            Err(_) => None,
+        }
+    } else {
+        None
+    };
+
     Ok(FfmpegAvailability {
-        ffmpeg: validator::find_ffmpeg().is_ok(),
-        ffprobe: validator::find_ffprobe().is_ok(),
+        ffmpeg: ffmpeg_ok,
+        ffprobe: ffprobe_ok,
+        ffmpeg_source,
     })
+}
+
+fn source_to_string(source: FfmpegSource) -> String {
+    match source {
+        FfmpegSource::System => "system".to_string(),
+        FfmpegSource::Embedded => "embedded".to_string(),
+        FfmpegSource::Filesystem => "filesystem".to_string(),
+    }
 }
 
 /// Extract metadata from a video file using ffprobe

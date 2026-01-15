@@ -166,7 +166,15 @@ function App() {
   // Legacy single-file progress
   const [progress, setProgress] = useState<TranscodeProgress | null>(null);
 
-  const { ffmpegAvailable, checking } = useFfmpegCheck();
+  const { ffmpegAvailable, checking, ffmpegSource } = useFfmpegCheck();
+
+  // Show notification if using embedded FFmpeg
+  useEffect(() => {
+    if (ffmpegSource === "embedded") {
+      // Show a one-time notification that we're using bundled FFmpeg
+      console.log("Using bundled FFmpeg from application");
+    }
+  }, [ffmpegSource]);
 
   // Listen for batch progress updates
   useEffect(() => {
@@ -484,6 +492,13 @@ function App() {
     <main className="container">
       <h1>Editing Transcoder</h1>
       <p className="subtitle">Convert videos to editing-friendly formats</p>
+
+      {ffmpegSource === "embedded" && (
+        <div className="info-banner">
+          <span className="info-icon"></span>
+          <span>Using bundled FFmpeg (system FFmpeg not found)</span>
+        </div>
+      )}
 
       <FileSelector
         onFilesSelect={handleFilesSelect}

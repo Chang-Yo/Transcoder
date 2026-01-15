@@ -1,5 +1,6 @@
 pub mod embedded;
 pub mod locator;
+pub use locator::FfmpegSource;
 pub mod validator;
 pub mod ffprobe;
 pub mod transcode;

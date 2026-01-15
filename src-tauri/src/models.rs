@@ -66,6 +66,9 @@ pub struct TranscodeProgress {
 pub struct FfmpegAvailability {
     pub ffmpeg: bool,
     pub ffprobe: bool,
+    /// Source of the FFmpeg binary ("system", "embedded", or "filesystem")
+    #[serde(rename = "ffmpegSource")]
+    pub ffmpeg_source: Option<String>,
 }
 
 /// Batch transcode request from frontend

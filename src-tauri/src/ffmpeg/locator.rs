@@ -3,38 +3,64 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-/// Get the path to the bundled ffmpeg executable
-pub fn get_ffmpeg_path() -> Result<PathBuf, String> {
-    // First, try embedded binaries
-    if let Ok(path) = get_embedded_binary("ffmpeg.exe") {
-        return Ok(path);
+/// FFmpeg source for user notification
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FfmpegSource {
+    System,
+    Embedded,
+    Filesystem,
+}
+
+/// Get the path to the ffmpeg executable with source information
+pub fn get_ffmpeg_path_with_source() -> Result<(PathBuf, FfmpegSource), String> {
+    // First, try system PATH (priority)
+    if let Ok(path) = which::which("ffmpeg") {
+        return Ok((path, FfmpegSource::System));
     }
 
     // Then try filesystem bundled version
     if let Some(exe_path) = get_filesystem_binary("ffmpeg.exe") {
-        return Ok(exe_path);
+        return Ok((exe_path, FfmpegSource::Filesystem));
     }
 
-    // Fall back to system PATH
-    which::which("ffmpeg")
-        .map_err(|_| "ffmpeg not found in system PATH".to_string())
+    // Finally, try embedded binaries
+    if let Ok(path) = get_embedded_binary("ffmpeg.exe") {
+        return Ok((path, FfmpegSource::Embedded));
+    }
+
+    Err("ffmpeg not found".to_string())
 }
 
-/// Get the path to the bundled ffprobe executable
-pub fn get_ffprobe_path() -> Result<PathBuf, String> {
-    // First, try embedded binaries
-    if let Ok(path) = get_embedded_binary("ffprobe.exe") {
-        return Ok(path);
+/// Get the path to the bundled ffmpeg executable
+pub fn get_ffmpeg_path() -> Result<PathBuf, String> {
+    get_ffmpeg_path_with_source()
+        .map(|(path, _)| path)
+}
+
+/// Get the path to the ffprobe executable with source information
+pub fn get_ffprobe_path_with_source() -> Result<(PathBuf, FfmpegSource), String> {
+    // First, try system PATH (priority)
+    if let Ok(path) = which::which("ffprobe") {
+        return Ok((path, FfmpegSource::System));
     }
 
     // Then try filesystem bundled version
     if let Some(exe_path) = get_filesystem_binary("ffprobe.exe") {
-        return Ok(exe_path);
+        return Ok((exe_path, FfmpegSource::Filesystem));
     }
 
-    // Fall back to system PATH
-    which::which("ffprobe")
-        .map_err(|_| "ffprobe not found in system PATH".to_string())
+    // Finally, try embedded binaries
+    if let Ok(path) = get_embedded_binary("ffprobe.exe") {
+        return Ok((path, FfmpegSource::Embedded));
+    }
+
+    Err("ffprobe not found".to_string())
+}
+
+/// Get the path to the bundled ffprobe executable
+pub fn get_ffprobe_path() -> Result<PathBuf, String> {
+    get_ffprobe_path_with_source()
+        .map(|(path, _)| path)
 }
 
 /// Extract embedded binary to temp directory and return its path

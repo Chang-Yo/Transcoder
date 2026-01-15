@@ -33,6 +33,42 @@ h1 {
   margin-bottom: 2rem;
 }
 
+/* Info banner for FFmpeg source notification */
+.info-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  color: #1565c0;
+  font-size: 0.9rem;
+}
+
+.info-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-color: #1976d2;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.info-icon::after {
+  content: "i";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 16px;
+  padding-left: 4.5px;
+}
+
 /* Checking state */
 .checking {
   display: flex;
@@ -717,5 +753,16 @@ a:hover {
 
   .queue-item-progress .progress-bar-bg {
     background-color: #3a3a3a;
+  }
+
+  /* Dark mode info banner */
+  .info-banner {
+    background-color: #1a2840;
+    border-color: #396cd8;
+    color: #90caf9;
+  }
+
+  .info-icon {
+    background-color: #1976d2;
   }
 }

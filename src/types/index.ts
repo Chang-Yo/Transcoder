@@ -37,6 +37,7 @@ export interface TranscodeProgress {
 export interface FfmpegAvailability {
   ffmpeg: boolean;
   ffprobe: boolean;
+  ffmpegSource?: "system" | "embedded" | "filesystem";
 }
 
 // Batch transcoding types

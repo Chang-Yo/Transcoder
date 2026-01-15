@@ -5,15 +5,17 @@ import type { FfmpegAvailability } from "../types";
 export function useFfmpegCheck() {
   const [ffmpegAvailable, setFfmpegAvailable] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [ffmpegSource, setFfmpegSource] = useState<"system" | "embedded" | "filesystem" | null>(null);
 
   useEffect(() => {
     invoke<FfmpegAvailability>("check_ffmpeg_available")
       .then((result) => {
         setFfmpegAvailable(result.ffmpeg && result.ffprobe);
+        setFfmpegSource(result.ffmpegSource ?? null);
         setChecking(false);
       })
       .catch(() => setChecking(false));
   }, []);
 
-  return { ffmpegAvailable, checking };
+  return { ffmpegAvailable, checking, ffmpegSource };
 }
