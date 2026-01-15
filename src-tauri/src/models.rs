@@ -14,9 +14,9 @@ pub struct VideoStream {
     pub codec: String,
     pub width: u32,
     pub height: u32,
-    pub framerate: String,        // Preserve as "30000/1001" for exactness
-    pub bit_depth: u8,            // 8 or 10
-    pub pix_fmt: String,          // "yuv420p", "yuv422p10le", etc.
+    pub framerate: String,          // Preserve as "30000/1001" for exactness
+    pub bit_depth: u8,              // 8 or 10
+    pub pix_fmt: String,            // "yuv420p", "yuv422p10le", etc.
     pub chroma_subsampling: String, // "4:2:0", "4:2:2"
 }
 
@@ -34,8 +34,8 @@ pub enum OutputPreset {
     ProRes422,
     #[serde(rename = "ProRes422LT")]
     ProRes422LT,
-    #[serde(rename = "ProRes422Proxy")]
-    ProRes422Proxy,
+    #[serde(rename = "ProRes420Proxy")]
+    ProRes420Proxy,
     #[serde(rename = "DnxHRHQX")]
     DnxHRHQX,
 }
@@ -52,7 +52,7 @@ pub struct TranscodeRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TranscodeProgress {
     pub current_file: String,
-    pub progress_percent: f64,    // 0.0 to 100.0
+    pub progress_percent: f64, // 0.0 to 100.0
     pub fps: Option<f64>,
     pub bitrate: Option<String>,
     pub time_elapsed: String,

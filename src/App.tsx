@@ -19,22 +19,22 @@ import type {
 const PRESET_INFO = {
   ProRes422: {
     name: "ProRes 422",
-    description: "Recommended - Main editing format, 10-bit, 4:2:2",
+    description: "ProRes, 10-bit, 4:2:2, PCM",
     bitrateMbps: 147, // at 1080p
   },
   ProRes422LT: {
     name: "ProRes 422 LT",
-    description: "Light version for disk-space constrained scenarios",
+    description: "ProRes, 10-bit, 4:2:2, PCM",
     bitrateMbps: 102, // at 1080p
   },
-  ProRes422Proxy: {
-    name: "ProRes 422 Proxy",
-    description: "Low-bitrate for proxy/offline editing, 8-bit, 4:2:0, AAC audio",
+  ProRes420Proxy: {
+    name: "ProRes 420 Proxy",
+    description: "ProRes, 8-bit, 4:2:0, AAC 320kbps",
     bitrateMbps: 36, // at 1080p
   },
   DnxHRHQX: {
     name: "DNxHR HQX",
-    description: "Windows-friendly alternative, 10-bit, 4:2:2",
+    description: "DNxHR, 10-bit, 4:2:2, PCM",
     bitrateMbps: 295, // at 1080p
   },
 } as const;
@@ -246,7 +246,7 @@ function App() {
             ? "_proreslt"
             : selectedPreset === "DnxHRHQX"
               ? "_dnxhr"
-              : selectedPreset === "ProRes422Proxy"
+              : selectedPreset === "ProRes420Proxy"
                 ? "_proxy"
                 : "_prores";
         const outputPath = `${outputDir || ""}${fileName}${suffix}.mov`;
@@ -274,7 +274,7 @@ function App() {
               ? "_proreslt"
               : selectedPreset === "DnxHRHQX"
                 ? "_dnxhr"
-                : selectedPreset === "ProRes422Proxy"
+                : selectedPreset === "ProRes420Proxy"
                   ? "_proxy"
                   : "_prores";
           return {
@@ -298,7 +298,7 @@ function App() {
               ? "_proreslt"
               : selectedPreset === "DnxHRHQX"
                 ? "_dnxhr"
-                : selectedPreset === "ProRes422Proxy"
+                : selectedPreset === "ProRes420Proxy"
                   ? "_proxy"
                   : "_prores";
           return {
