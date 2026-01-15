@@ -1,186 +1,136 @@
 # Editing Transcoder
 
-A desktop application for converting videos to editing-friendly intermediate codecs (ProRes, DNxHR) for use in Adobe Premiere Pro and After Effects.
+一款将视频转换为剪辑友好格式（ProRes、DNxHR）的桌面应用，专为 Adobe Premiere Pro 和 After Effects 设计。
 
-**Design Philosophy:** Intent-driven, not parameter-driven. Users select "I want to edit," not "I want to set encoding parameters."
+**设计理念：** 意图驱动，而非参数驱动。用户只需选择"我要剪辑"，无需理解复杂的编码参数。
 
-## Features
+## 下载
 
-- **Single-click transcoding** to editing-friendly formats
-- **Five output presets** with card-based selection UI:
-  - **ProRes 422** (recommended) - 10-bit, 4:2:2, intra-frame compression
-  - **ProRes 422 LT** - For disk-space constrained scenarios
-  - **ProRes 422 Proxy** - Low-bitrate proxy for offline editing, AAC audio
-  - **DNxHR HQX** - Windows-friendly alternative, 10-bit/4:2:2
-  - **H.264 CRF 18** - High-quality H.264 with professional encoding settings
-- **Output file size estimation** - See expected size before transcoding
-- **Audio auto-conversion** to PCM (uncompressed) for Adobe compatibility (AAC for Proxy and H.264 presets)
-- **Real-time progress** tracking during transcoding
-- **Drag-and-drop** file selection
-- **Batch transcoding** - Process multiple files in parallel
-- **Bundled FFmpeg** - No external dependencies required
+| 文件                                                                                            | 大小   | 说明                         |
+| ----------------------------------------------------------------------------------------------- | ------ | ---------------------------- |
+| [transcoder.exe](../../releases/download/v0.1.0/transcoder.exe)                                 | 195 MB | 独立可执行文件，双击即可运行 |
+| [transcoder_0.1.0_x64-setup.exe](../../releases/download/v0.1.0/transcoder_0.1.0_x64-setup.exe) | 54 MB  | NSIS 安装程序（推荐）        |
 
-## Requirements
+**系统要求：** Windows 10/11 (64-bit)
 
-**None!** FFmpeg and FFprobe are embedded in the application. Simply download and run.
+**注意：** FFmpeg 已内置，无需单独安装。
 
-## Installation
+## 功能特性
 
-### Download Pre-built Release
+- **一键转码** — 转换为剪辑友好的中间编码格式
+- **5 种输出预设**
+  - **ProRes 422**（推荐）— 10-bit 4:2:2，专业剪辑格式
+  - **ProRes 422 LT** — 节省空间的版本
+  - **ProRes 422 Proxy** — 低码率代理格式
+  - **DNxHR HQX** — Windows 友好格式
+  - **H.264 CRF 18** — 高质量 H.264，用于交付
+- **批量转码** — 支持多文件并行处理
+- **实时进度** — 显示转码进度和预计剩余时间
+- **文件大小估算** — 转码前预估输出文件大小
+- **拖拽操作** — 支持拖拽视频文件或文件夹
+- **内置 FFmpeg** — 无需外部依赖
 
-Download the latest installer from the [Releases](../../releases) page.
+## 使用方法
 
-- **Windows:** `transcoder_0.1.0_x64-setup.exe` (~54 MB)
-- **macOS:** `transcoder_0.1.0_x64.dmg` (coming soon)
+### 快速开始
 
-### Build from Source
+1. **启动应用** — 双击运行 `transcoder.exe` 或安装后从开始菜单启动
+2. **添加视频** — 拖拽视频文件到窗口，或点击 "Browse Files" 选择文件
+   - 支持多选或拖拽多个文件
+   - 支持拖拽文件夹，自动识别其中的视频文件
+3. **选择格式** — 点击选择输出格式预设
+   - ProRes 422：推荐用于大多数剪辑场景
+   - ProRes 422 LT：硬盘空间不足时使用
+   - ProRes 422 Proxy：用于离线剪辑或低配置电脑
+   - DNxHR HQX：Windows 环境下的首选
+   - H.264 CRF 18：用于最终交付或网络分享
+4. **确认输出** — 查看预估文件大小，确认或修改输出目录
+5. **开始转码** — 点击 "Start Batch Transcode" 按钮
+6. **等待完成** — 查看实时进度，转码完成后导入 PR/AE 使用
+
+### 输出格式对照表
+
+| 预设             | 编码      | 容器 | 位深   | 色度采样 | 音频        | 码率 (1080p) | 用途                 |
+| ---------------- | --------- | ---- | ------ | -------- | ----------- | ------------ | -------------------- |
+| ProRes 422       | prores_ks | .mov | 10-bit | 4:2:2    | PCM 16-bit  | ~147 Mbps    | 主力剪辑格式（推荐） |
+| ProRes 422 LT    | prores_ks | .mov | 10-bit | 4:2:2    | PCM 16-bit  | ~102 Mbps    | 硬盘空间受限         |
+| ProRes 422 Proxy | prores_ks | .mov | 8-bit  | 4:2:0    | AAC 320kbps | ~36 Mbps     | 代理/离线剪辑        |
+| DNxHR HQX        | dnxhd     | .mov | 10-bit | 4:2:2    | PCM 16-bit  | ~295 Mbps    | Windows 友好         |
+| H.264 CRF 18     | libx264   | .mp4 | 8-bit  | 4:2:0    | AAC 320kbps | 可变         | 交付/网络分发        |
+
+### 智能处理规则
+
+应用会自动处理：
+
+- **10-bit 视频输入** → 保留 10-bit 输出（Proxy/H.264 除外）
+- **任意帧率** → 完全保留，不进行帧率转换
+- **FLAC/Opus 音频** → 自动转换为 PCM 或 AAC
+- **8-bit 视频** → 保持 8-bit，不 upscale
+
+### 常见问题
+
+**Q: Windows Defender 提示"未知发布者"怎么办？**
+
+A: 这是正常现象。点击 "更多信息" → "仍要运行" 即可。
+
+**Q: 首次运行为什么比较慢？**
+
+A: 首次运行需要将内置的 FFmpeg 提取到临时目录，约需几秒钟。
+
+**Q: 支持哪些输入格式？**
+
+A: 支持 FFmpeg 能解码的所有视频格式，包括 MP4、MKV、AVI、MOV、WEBM 等。
+
+**Q: 可以在 macOS 上运行吗？**
+
+A: 目前仅支持 Windows，macOS 版本开发中。
+
+## 从源码构建
 
 ```bash
-# Clone the repository
+# 克隆仓库
 git clone <repository-url>
 cd Transcoder
 
-# Install dependencies
+# 安装依赖
 npm install
 
-# Download FFmpeg binaries (required for building)
-# Create src-tauri/binaries/windows/ directory and place:
+# 下载 FFmpeg 二进制文件（构建必需）
+# 创建 src-tauri/binaries/windows/ 目录，放入：
 #   - ffmpeg.exe
 #   - ffprobe.exe
-# Create src-tauri/binaries/darwin/ directory and place:
-#   - ffmpeg
-#   - ffprobe
-#
-# Download from: https://www.gyan.dev/ffmpeg/builds/ (Windows)
-#                 https://evermeet.cx/ffmpeg/ (macOS)
+# Windows 下载: https://www.gyan.dev/ffmpeg/builds/
+# macOS 下载: https://evermeet.cx/ffmpeg/
 
-# Run development server
+# 开发模式运行
 npm run tauri dev
-```
 
-## Building for Production
-
-```bash
+# 构建发布版本
 npm run tauri build
 ```
 
-The built application will be in `src-tauri/target/release/bundle/`.
+构建产物位于 `src-tauri/target/release/bundle/`。
 
-## Output Formats
+## 技术栈
 
-| Preset | Codec | Container | Bit Depth | Chroma | Video Bitrate | Audio | Use Case |
-|--------|-------|-----------|-----------|--------|---------------|-------|----------|
-| ProRes 422 | prores_ks | .mov | 10-bit | 4:2:2 | ~147 Mbps (1080p) | PCM 16-bit | Main editing format (recommended) |
-| ProRes 422 LT | prores_ks | .mov | 10-bit | 4:2:2 | ~102 Mbps (1080p) | PCM 16-bit | Disk-space constrained |
-| ProRes 422 Proxy | prores_ks | .mov | 8-bit | 4:2:0 | ~36 Mbps (1080p) | AAC 320kbps | Proxy/offline editing, low storage |
-| DNxHR HQX | dnxhd | .mov | 10-bit | 4:2:2 | ~295 Mbps (1080p) | PCM 16-bit | Windows-friendly |
-| H.264 CRF 18 | libx264 | .mp4 | 8-bit | 4:2:0 | Variable | AAC 320kbps | High-quality delivery/web |
+- **前端：** TypeScript + React + Vite
+- **后端：** Rust + Tauri
+- **媒体处理：** FFmpeg（通过 rust-embed 内置）
 
-**Audio Strategy:**
-- Regular presets (ProRes, DNxHR): PCM 16-bit (uncompressed) for maximum Adobe compatibility
-- Proxy and H.264 presets: AAC 320kbps for reduced file size
+## 更新日志
 
-## Smart Rules
+### v0.1.0 (2025-01-15)
 
-The application automatically handles:
+- 初始发布
+- 支持 ProRes 422 系列、DNxHR HQX、H.264 CRF 18 预设
+- 批量转码功能
+- 内置 FFmpeg，无需外部依赖
+- 优先使用系统 FFmpeg（如果存在），否则使用内置版本
 
-- **10-bit video input** → Preserves 10-bit output (except Proxy/H.264)
-- **Any framerate** → Preserves exactly (no conversion)
-- **FLAC/Opus audio** → Auto-converts to PCM or AAC depending on preset
-- **8-bit video** → Keeps 8-bit (no upscaling)
+## 开源许可
 
-## Usage
+Apache License
 
-1. Launch the application
-2. Drag and drop video file(s) or click "Browse Files" (supports multiple files for batch processing)
-3. Select an output preset
-4. View estimated output size (updates based on preset selection)
-5. Verify or modify the output path/directory
-6. Click "Start Transcode" (or "Start Batch Transcode" for multiple files)
-7. Wait for progress to complete
-8. Import the output file(s) into Premiere Pro or After Effects
+## 贡献
 
-## Project Structure
-
-```
-Transcoder/
-├── src/                    # Frontend (TypeScript/React)
-│   ├── components/         # React components
-│   ├── hooks/              # Custom React hooks
-│   └── types/              # TypeScript type definitions
-├── src-tauri/              # Backend (Rust)
-│   ├── binaries/           # FFmpeg binaries (gitignored)
-│   │   ├── windows/        # Windows FFmpeg builds
-│   │   └── darwin/         # macOS FFmpeg builds
-│   └── src/
-│       ├── commands.rs     # Tauri command handlers
-│       ├── models.rs       # Data structures
-│       ├── error.rs        # Error types
-│       ├── preset.rs       # FFmpeg command generation
-│       └── ffmpeg/         # FFmpeg integration
-│           ├── embedded.rs    # Embedded binaries (rust-embed)
-│           ├── locator.rs     # Binary location resolution
-│           ├── validator.rs   # FFmpeg availability check
-│           ├── ffprobe.rs     # Media metadata extraction
-│           └── transcode.rs   # Transcoding engine
-├── CLAUDE.md              # Project instructions for AI
-└── plans.md               # Detailed Chinese documentation
-```
-
-## Development
-
-### Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/)
-- [Tauri Extension](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode)
-- [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
-
-### Tech Stack
-
-- **Frontend:** TypeScript + React + Vite
-- **Backend:** Rust + Tauri
-- **Media Processing:** FFmpeg (embedded via rust-embed)
-
-### Development Commands
-
-```bash
-# Development server
-npm run tauri dev
-
-# Type check frontend
-npx tsc --noEmit
-
-# Check Rust backend
-cd src-tauri && cargo check
-
-# Format Rust code
-cd src-tauri && cargo fmt
-
-# Run Rust linter
-cd src-tauri && cargo clippy
-```
-
-### Architecture Notes
-
-- **FFmpeg Distribution:** Binaries are embedded at compile time using `rust-embed`
-- **Extraction:** On first run, embedded binaries are extracted to temp directory
-- **Fallback:** If embedded binaries fail, the app falls back to system PATH
-- **Single-file Distribution:** The final EXE contains everything needed
-
-## Roadmap
-
-- [x] v0.1 - MVP: Single file, ProRes 422 output
-- [x] v0.2 - Smart rules: Auto-detect 8/10-bit, audio → PCM
-- [x] v0.3 - Multiple preset support, output size estimation
-- [x] v0.4 - Batch queue, parallel transcoding, progress tracking
-- [x] v0.5 - Proxy preset with AAC audio
-- [x] v0.6 - H.264 CRF 18 preset for delivery
-- [x] v0.7 - Embedded FFmpeg (no external dependencies)
-
-## License
-
-MIT
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+欢迎贡献！请随时提交 Pull Request。
