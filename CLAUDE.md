@@ -36,11 +36,12 @@ This is an **Editing Transcoder** - a desktop application built with **Tauri + R
 
 ## Output Presets
 
-The tool supports three video output presets (user-selectable via card-based UI):
+The tool supports four video output presets (user-selectable via card-based UI):
 
 1. **ProRes 422** (recommended) - Main editing format, intra-frame compression, 10-bit, 4:2:2 (~147 Mbps at 1080p)
 2. **ProRes 422 LT** - For disk-space constrained scenarios (~102 Mbps at 1080p)
-3. **DNxHR HQX** - Windows-friendly alternative, also 10-bit/4:2:2 (~295 Mbps at 1080p)
+3. **ProRes 422 Proxy** - Low-bitrate proxy for offline editing (~36 Mbps at 1080p), 8-bit, 4:2:0, AAC audio
+4. **DNxHR HQX** - Windows-friendly alternative, also 10-bit/4:2:2 (~295 Mbps at 1080p)
 
 ### Output File Size Estimation
 
@@ -52,9 +53,10 @@ The frontend automatically estimates the output file size based on:
 Estimation is displayed after selecting a file and updates when switching presets.
 
 ### Audio Output Strategy (Automatic)
-- All input audio → **PCM (uncompressed)**
-- Default: PCM 16-bit | Optional: PCM 24-bit
-- Rationale: Native Adobe support, avoids audio decoding/compatibility issues
+- **Regular presets** (ProRes 422, ProRes 422 LT, DNxHR HQX): All input audio → **PCM 16-bit (uncompressed)**
+- **Proxy preset** (ProRes 422 Proxy): All input audio → **AAC 320kbps**
+- Rationale for PCM: Native Adobe support, avoids audio decoding/compatibility issues
+- Rationale for AAC (Proxy): Significantly reduced file size while maintaining acceptable quality for offline editing
 
 ---
 
@@ -74,7 +76,8 @@ Estimation is displayed after selecting a file and updates when switching preset
 - **v0.1 (MVP)**: Single file input, fixed ProRes 422 output, basic UI ✅
 - **v0.2**: Auto-detect 8/10-bit, auto audio → PCM ✅
 - **v0.3**: Multiple preset support (ProRes LT, DNxHR), output size estimation ✅
-- **v0.4**: Batch queue, output naming rules, basic logging
+- **v0.4**: Batch queue, parallel transcoding, progress tracking ✅
+- **v0.5**: Low-size Proxy preset with AAC audio
 
 ---
 

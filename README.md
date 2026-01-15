@@ -7,14 +7,16 @@ A desktop application for converting videos to editing-friendly intermediate cod
 ## Features
 
 - **Single-click transcoding** to editing-friendly formats
-- **Three output presets** with card-based selection UI:
+- **Four output presets** with card-based selection UI:
   - **ProRes 422** (recommended) - 10-bit, 4:2:2, intra-frame compression
   - **ProRes 422 LT** - For disk-space constrained scenarios
+  - **ProRes 422 Proxy** - Low-bitrate proxy for offline editing, AAC audio
   - **DNxHR HQX** - Windows-friendly alternative, 10-bit/4:2:2
 - **Output file size estimation** - See expected size before transcoding
-- **Audio auto-conversion** to PCM (uncompressed) for Adobe compatibility
+- **Audio auto-conversion** to PCM (uncompressed) for Adobe compatibility (AAC for Proxy preset)
 - **Real-time progress** tracking during transcoding
 - **Drag-and-drop** file selection
+- **Batch transcoding** - Process multiple files in parallel
 
 ## Requirements
 
@@ -71,13 +73,16 @@ The built application will be in `src-tauri/target/release/bundle/`.
 
 ## Output Formats
 
-| Preset | Codec | Bit Depth | Chroma | Use Case |
-|--------|-------|-----------|--------|----------|
-| ProRes 422 | prores_ks | 10-bit | 4:2:2 | Main editing format (recommended) |
-| ProRes 422 LT | prores_ks | 10-bit | 4:2:2 | Disk-space constrained |
-| DNxHR HQX | dnxhd | 10-bit | 4:2:2 | Windows-friendly |
+| Preset | Codec | Bit Depth | Chroma | Video Bitrate | Audio | Use Case |
+|--------|-------|-----------|--------|---------------|-------|----------|
+| ProRes 422 | prores_ks | 10-bit | 4:2:2 | ~147 Mbps (1080p) | PCM 16-bit | Main editing format (recommended) |
+| ProRes 422 LT | prores_ks | 10-bit | 4:2:2 | ~102 Mbps (1080p) | PCM 16-bit | Disk-space constrained |
+| ProRes 422 Proxy | prores_ks | 8-bit | 4:2:0 | ~36 Mbps (1080p) | AAC 320kbps | Proxy/offline editing, low storage |
+| DNxHR HQX | dnxhd | 10-bit | 4:2:2 | ~295 Mbps (1080p) | PCM 16-bit | Windows-friendly |
 
-**Audio:** All input audio is converted to PCM 16-bit (uncompressed) for maximum Adobe compatibility.
+**Audio Strategy:**
+- Regular presets: PCM 16-bit (uncompressed) for maximum Adobe compatibility
+- Proxy preset: AAC 320kbps for reduced file size
 
 ## Smart Rules
 
@@ -91,13 +96,13 @@ The application automatically handles:
 ## Usage
 
 1. Launch the application
-2. Drag and drop a video file or click "Browse Files"
-3. Select an output preset (ProRes 422, ProRes 422 LT, or DNxHR HQX)
+2. Drag and drop video file(s) or click "Browse Files" (supports multiple files for batch processing)
+3. Select an output preset (ProRes 422, ProRes 422 LT, ProRes 422 Proxy, or DNxHR HQX)
 4. View estimated output size (updates based on preset selection)
-5. Verify or modify the output path
-6. Click "Start Transcode"
+5. Verify or modify the output path/directory
+6. Click "Start Transcode" (or "Start Batch Transcode" for multiple files)
 7. Wait for progress to complete
-8. Import the output file into Premiere Pro or After Effects
+8. Import the output file(s) into Premiere Pro or After Effects
 
 ## Project Structure
 
@@ -159,7 +164,8 @@ cd src-tauri && cargo clippy
 - [x] v0.1 - MVP: Single file, ProRes 422 output
 - [x] v0.2 - Smart rules: Auto-detect 8/10-bit, audio → PCM
 - [x] v0.3 - Multiple preset support, output size estimation
-- [ ] v0.4 - Batch queue, output naming rules, logging
+- [x] v0.4 - Batch queue, parallel transcoding, progress tracking
+- [ ] v0.5 - Low-size preset (Proxy) with AAC audio
 
 ## License
 
