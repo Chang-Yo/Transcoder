@@ -16,9 +16,7 @@ pub async fn check_ffmpeg_available() -> Result<FfmpegAvailability, CmdError> {
 #[tauri::command]
 pub async fn get_media_info(file_path: String) -> Result<MediaMetadata, CmdError> {
     validator::ensure_ffprobe()?;
-    Ok(ffmpeg::ffprobe::extract_metadata(&file_path)
-        .await
-        .map_err(|e| TranscodeError::MediaInfoFailed(e.to_string()))?)
+    Ok(ffmpeg::ffprobe::extract_metadata(&file_path).await?)
 }
 
 /// Start transcoding - returns immediately, progress sent via events

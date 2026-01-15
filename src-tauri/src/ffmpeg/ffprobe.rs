@@ -4,7 +4,9 @@ use crate::models::{AudioStream, MediaMetadata, VideoStream};
 use serde_json::Value;
 use std::process::Command;
 
-pub async fn extract_metadata(file_path: &str) -> Result<MediaMetadata, Box<dyn std::error::Error>> {
+pub async fn extract_metadata(
+    file_path: &str,
+) -> Result<MediaMetadata, TranscodeError> {
     let output = Command::new("ffprobe")
         .args([
             "-hide_banner",
@@ -19,19 +21,22 @@ pub async fn extract_metadata(file_path: &str) -> Result<MediaMetadata, Box<dyn 
         .output_no_console()?;
 
     if !output.status.success() {
-        return Err(Box::new(TranscodeError::MediaInfoFailed(
+        return Err(TranscodeError::MediaInfoFailed(
             String::from_utf8_lossy(&output.stderr).to_string(),
-        )));
+        ));
     }
 
     let json: Value = serde_json::from_slice(&output.stdout)?;
     parse_ffprobe_output(json, file_path)
 }
 
-fn parse_ffprobe_output(json: Value, file_path: &str) -> Result<MediaMetadata, Box<dyn std::error::Error>> {
+fn parse_ffprobe_output(
+    json: Value,
+    file_path: &str,
+) -> Result<MediaMetadata, TranscodeError> {
     let streams = json["streams"]
         .as_array()
-        .ok_or("No streams found in output")?;
+        .ok_or_else(|| TranscodeError::MediaInfoFailed("No streams found in output".to_string()))?;
 
     let mut video_stream = None;
     let mut audio_stream = None;
@@ -58,23 +63,29 @@ fn parse_ffprobe_output(json: Value, file_path: &str) -> Result<MediaMetadata, B
     Ok(MediaMetadata {
         file_path: file_path.to_string(),
         duration_sec: duration,
-        video: video_stream.ok_or("No video stream found")?,
+        video: video_stream.ok_or_else(|| TranscodeError::MediaInfoFailed("No video stream found".to_string()))?,
         audio: audio_stream,
     })
 }
 
-fn parse_video_stream(stream: &Value) -> Result<VideoStream, Box<dyn std::error::Error>> {
+fn parse_video_stream(stream: &Value) -> Result<VideoStream, TranscodeError> {
     let pix_fmt = stream["pix_fmt"].as_str().unwrap_or("yuv420p").to_string();
     let bit_depth = extract_bit_depth(&pix_fmt, stream);
 
     // Parse framerate from "r_frame_rate" (e.g., "30000/1001")
-    let framerate = stream["r_frame_rate"].as_str().unwrap_or("25/1").to_string();
+    let framerate = stream["r_frame_rate"]
+        .as_str()
+        .unwrap_or("25/1")
+        .to_string();
 
     // Determine chroma subsampling from pix_fmt
     let chroma_subsampling = chroma_from_pix_fmt(&pix_fmt);
 
     Ok(VideoStream {
-        codec: stream["codec_name"].as_str().unwrap_or("unknown").to_string(),
+        codec: stream["codec_name"]
+            .as_str()
+            .unwrap_or("unknown")
+            .to_string(),
         width: stream["width"].as_u64().unwrap_or(1920) as u32,
         height: stream["height"].as_u64().unwrap_or(1080) as u32,
         framerate,
@@ -84,9 +95,12 @@ fn parse_video_stream(stream: &Value) -> Result<VideoStream, Box<dyn std::error:
     })
 }
 
-fn parse_audio_stream(stream: &Value) -> Result<AudioStream, Box<dyn std::error::Error>> {
+fn parse_audio_stream(stream: &Value) -> Result<AudioStream, TranscodeError> {
     Ok(AudioStream {
-        codec: stream["codec_name"].as_str().unwrap_or("unknown").to_string(),
+        codec: stream["codec_name"]
+            .as_str()
+            .unwrap_or("unknown")
+            .to_string(),
         sample_rate: stream["sample_rate"]
             .as_str()
             .and_then(|s| s.parse().ok())
