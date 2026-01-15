@@ -38,6 +38,3 @@ impl From<TranscodeError> for CmdError {
         }
     }
 }
-
-/// Result type for Tauri commands
-pub type CmdResult<T> = Result<T, CmdError>;

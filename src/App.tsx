@@ -29,8 +29,8 @@ const PRESET_INFO = {
   },
   ProRes422Proxy: {
     name: "ProRes 422 Proxy",
-    description: "Low-bitrate for proxy/offline editing, 8-bit, AAC audio",
-    bitrateMbps: 45, // at 1080p
+    description: "Low-bitrate for proxy/offline editing, 8-bit, 4:2:0, AAC audio",
+    bitrateMbps: 36, // at 1080p
   },
   DnxHRHQX: {
     name: "DNxHR HQX",

@@ -47,7 +47,7 @@ impl OutputPreset {
             OutputPreset::ProRes422Proxy => vec![
                 "-profile:v".to_string(), "0".to_string(),  // ProRes 422 Proxy
                 "-vendor".to_string(), "ap10".to_string(),
-                "-pix_fmt".to_string(), "yuv422p".to_string(), // 8-bit 4:2:2
+                "-pix_fmt".to_string(), "yuv420p".to_string(), // 8-bit 4:2:0
             ],
             OutputPreset::DnxHRHQX => vec![
                 "-profile:v".to_string(), "dnxhr_hqx".to_string(),
