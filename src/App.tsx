@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
+import { readDir } from "@tauri-apps/api/fs";
 import "./App.css";
 import { useFfmpegCheck } from "./hooks/useFfmpegCheck";
 import { FileSelector } from "./components/FileSelector";
@@ -14,6 +15,31 @@ import type {
   FileTask,
   BatchProgress,
 } from "./types";
+
+// Supported video file extensions
+const VIDEO_EXTENSIONS = [
+  "mp4", "mkv", "avi", "mov", "m4v", "webm", "flv", "wmv"
+];
+
+// Check if a path is a video file based on extension
+function isVideoFile(path: string): boolean {
+  const ext = path.split(".").pop()?.toLowerCase();
+  return ext ? VIDEO_EXTENSIONS.includes(ext) : false;
+}
+
+// Read video files from a folder (non-recursive)
+async function readVideoFilesFromFolder(folderPath: string): Promise<string[]> {
+  try {
+    const entries = await readDir(folderPath);
+    const videoFiles = entries
+      .filter(entry => !entry.children && entry.path && isVideoFile(entry.path))
+      .map(entry => entry.path);
+    return videoFiles;
+  } catch (error) {
+    console.error("Failed to read folder:", error);
+    return [];
+  }
+}
 
 // Preset definitions for UI
 const PRESET_INFO = {
@@ -262,6 +288,37 @@ function App() {
       return newTasks;
     });
   };
+
+  // Listen for Tauri file drop events
+  useEffect(() => {
+    const unlisten = listen<string[]>("tauri://file-drop", async (event) => {
+      if (isTranscoding) return;
+
+      const droppedPaths = event.payload;
+      const allVideoFiles: string[] = [];
+
+      // Process each dropped path
+      for (const path of droppedPaths) {
+        if (isVideoFile(path)) {
+          // It's a video file, add it directly
+          allVideoFiles.push(path);
+        } else {
+          // It might be a folder, try to read video files from it
+          const videoFiles = await readVideoFilesFromFolder(path);
+          allVideoFiles.push(...videoFiles);
+        }
+      }
+
+      // If we found any video files, select them
+      if (allVideoFiles.length > 0) {
+        await handleFilesSelect(allVideoFiles);
+      }
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [isTranscoding, outputDir, selectedPreset]);
 
   // Update output paths when preset changes
   useEffect(() => {

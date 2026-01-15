@@ -20,6 +20,11 @@
       "dialog": {
         "all": false,
         "open": true
+      },
+      "fs": {
+        "all": false,
+        "readDir": true,
+        "scope": ["**"]
       }
     },
     "windows": [
