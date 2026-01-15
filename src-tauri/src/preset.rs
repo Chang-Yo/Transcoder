@@ -29,6 +29,7 @@ impl OutputPreset {
         match self {
             OutputPreset::ProRes422 => "prores_ks".to_string(),
             OutputPreset::ProRes422LT => "prores_ks".to_string(),
+            OutputPreset::ProRes422Proxy => "prores_ks".to_string(),
             OutputPreset::DnxHRHQX => "dnxhd".to_string(),
         }
     }
@@ -43,6 +44,11 @@ impl OutputPreset {
                 "-profile:v".to_string(), "1".to_string(),  // ProRes 422 LT
                 "-vendor".to_string(), "ap10".to_string(),
             ],
+            OutputPreset::ProRes422Proxy => vec![
+                "-profile:v".to_string(), "0".to_string(),  // ProRes 422 Proxy
+                "-vendor".to_string(), "ap10".to_string(),
+                "-pix_fmt".to_string(), "yuv422p".to_string(), // 8-bit 4:2:2
+            ],
             OutputPreset::DnxHRHQX => vec![
                 "-profile:v".to_string(), "dnxhr_hqx".to_string(),
             ],
@@ -50,9 +56,16 @@ impl OutputPreset {
     }
 
     fn audio_args(&self) -> Vec<String> {
-        // Always PCM 16-bit little-endian
-        vec![
-            "-c:a".to_string(), "pcm_s16le".to_string(),
-        ]
+        match self {
+            // Proxy preset uses AAC for reduced file size
+            OutputPreset::ProRes422Proxy => vec![
+                "-c:a".to_string(), "aac".to_string(),
+                "-b:a".to_string(), "320k".to_string(),
+            ],
+            // Other presets use PCM 16-bit for Adobe compatibility
+            _ => vec![
+                "-c:a".to_string(), "pcm_s16le".to_string(),
+            ],
+        }
     }
 }

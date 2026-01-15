@@ -34,6 +34,8 @@ pub enum OutputPreset {
     ProRes422,
     #[serde(rename = "ProRes422LT")]
     ProRes422LT,
+    #[serde(rename = "ProRes422Proxy")]
+    ProRes422Proxy,
     #[serde(rename = "DnxHRHQX")]
     DnxHRHQX,
 }

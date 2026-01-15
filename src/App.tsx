@@ -27,6 +27,11 @@ const PRESET_INFO = {
     description: "Light version for disk-space constrained scenarios",
     bitrateMbps: 102, // at 1080p
   },
+  ProRes422Proxy: {
+    name: "ProRes 422 Proxy",
+    description: "Low-bitrate for proxy/offline editing, 8-bit, AAC audio",
+    bitrateMbps: 45, // at 1080p
+  },
   DnxHRHQX: {
     name: "DNxHR HQX",
     description: "Windows-friendly alternative, 10-bit, 4:2:2",
@@ -241,7 +246,9 @@ function App() {
             ? "_proreslt"
             : selectedPreset === "DnxHRHQX"
               ? "_dnxhr"
-              : "_prores";
+              : selectedPreset === "ProRes422Proxy"
+                ? "_proxy"
+                : "_prores";
         const outputPath = `${outputDir || ""}${fileName}${suffix}.mov`;
 
         newTasks.push({
@@ -267,7 +274,9 @@ function App() {
               ? "_proreslt"
               : selectedPreset === "DnxHRHQX"
                 ? "_dnxhr"
-                : "_prores";
+                : selectedPreset === "ProRes422Proxy"
+                  ? "_proxy"
+                  : "_prores";
           return {
             ...task,
             outputPath: `${outputDir}${fileName}${suffix}.mov`,
@@ -289,7 +298,9 @@ function App() {
               ? "_proreslt"
               : selectedPreset === "DnxHRHQX"
                 ? "_dnxhr"
-                : "_prores";
+                : selectedPreset === "ProRes422Proxy"
+                  ? "_proxy"
+                  : "_prores";
           return {
             ...task,
             outputPath: `${outputDir}${fileName}${suffix}.mov`,

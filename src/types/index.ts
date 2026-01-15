@@ -17,7 +17,7 @@ export interface MediaMetadata {
   };
 }
 
-export type OutputPreset = "ProRes422" | "ProRes422LT" | "DnxHRHQX";
+export type OutputPreset = "ProRes422" | "ProRes422LT" | "ProRes422Proxy" | "DnxHRHQX";
 
 export interface TranscodeRequest {
   input_path: string;
