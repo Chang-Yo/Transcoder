@@ -53,8 +53,8 @@ const PRESET_INFO = {
     description: "ProRes, 10-bit, 4:2:2, PCM",
     bitrateMbps: 102, // at 1080p
   },
-  ProRes420Proxy: {
-    name: "ProRes 420 Proxy",
+  ProRes422Proxy: {
+    name: "ProRes 422 Proxy",
     description: "ProRes, 8-bit, 4:2:0, AAC 320kbps",
     bitrateMbps: 36, // at 1080p
   },
@@ -63,15 +63,55 @@ const PRESET_INFO = {
     description: "DNxHR, 10-bit, 4:2:2, PCM",
     bitrateMbps: 295, // at 1080p
   },
+  H264Crf18: {
+    name: "H.264 CRF 18",
+    description: "H.264, 8-bit, 4:2:0, AAC 320kbps",
+    bitrateMbps: 25, // at 1080p (variable bitrate, CRF-based)
+  },
 } as const;
 
-// Calculate estimated output file size
+// Get output file suffix and extension for a preset
+function getPresetOutputInfo(preset: OutputPreset): { suffix: string; ext: ".mov" | ".mp4" } {
+  switch (preset) {
+    case "ProRes422LT":
+      return { suffix: "_proreslt", ext: ".mov" };
+    case "DnxHRHQX":
+      return { suffix: "_dnxhr", ext: ".mov" };
+    case "ProRes422Proxy":
+      return { suffix: "_proxy", ext: ".mov" };
+    case "H264Crf18":
+      return { suffix: "_h264", ext: ".mp4" };
+    default:
+      return { suffix: "_prores", ext: ".mov" };
+  }
+}
+
+// Calculate estimated output file size (returns size in MB, or range for CRF)
 function estimateOutputSize(
   metadata: MediaMetadata | null,
   preset: OutputPreset
-): string {
-  if (!metadata) return "Select a video file";
+): { minMB: number; maxMB: number } {
+  if (!metadata) return { minMB: 0, maxMB: 0 };
 
+  // H.264 CRF is quality-based, not bitrate-based
+  // Output size varies greatly based on content complexity
+  if (preset === "H264Crf18") {
+    const pixels = metadata.video.width * metadata.video.height;
+    const baselinePixels = 1920 * 1080;
+    const resolutionFactor = pixels / baselinePixels;
+
+    // Base size estimates at 1080p (in MB per minute)
+    const minSizePerMin = 15 * resolutionFactor; // ~15 MB/min for simple content
+    const maxSizePerMin = 45 * resolutionFactor; // ~45 MB/min for complex content
+
+    const durationMin = metadata.duration_sec / 60;
+    return {
+      minMB: minSizePerMin * durationMin,
+      maxMB: maxSizePerMin * durationMin,
+    };
+  }
+
+  // For CBR presets (ProRes, DNxHR), use fixed bitrate calculation
   const presetInfo = PRESET_INFO[preset];
   const baseBitrate = presetInfo.bitrateMbps * 1_000_000; // Convert to bits/sec
 
@@ -82,15 +122,30 @@ function estimateOutputSize(
 
   const adjustedBitrate = baseBitrate * resolutionFactor;
   const totalBits = adjustedBitrate * metadata.duration_sec;
-  const totalBytes = totalBits / 8; // Convert to bytes
+  const totalMB = totalBits / 8 / (1024 ** 2);
 
-  // Format as human-readable
-  const gb = totalBytes / (1024 ** 3);
-  if (gb >= 1) {
-    return `~${gb.toFixed(1)} GB`;
+  // For CBR, min and max are the same
+  return { minMB: totalMB, maxMB: totalMB };
+}
+
+// Format size for display
+function formatSize(sizeMB: number): string {
+  if (sizeMB >= 1024) {
+    return `~${(sizeMB / 1024).toFixed(1)} GB`;
   }
-  const mb = totalBytes / (1024 ** 2);
-  return `~${mb.toFixed(0)} MB`;
+  return `~${sizeMB.toFixed(0)} MB`;
+}
+
+// Format size range for display (for CRF presets)
+function formatSizeRange(minMB: number, maxMB: number): string {
+  if (minMB === maxMB) {
+    return formatSize(minMB);
+  }
+  const maxGB = maxMB / 1024;
+  if (maxGB >= 1) {
+    return `~${(minMB / 1024).toFixed(1)}-${maxGB.toFixed(1)} GB`;
+  }
+  return `~${minMB.toFixed(0)}-${maxMB.toFixed(0)} MB`;
 }
 
 function App() {
@@ -104,6 +159,9 @@ function App() {
   // Batch task tracking
   const [tasks, setTasks] = useState<FileTask[]>([]);
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
+
+  // Debounce tracking for file drop to prevent race conditions
+  const [lastDropTime, setLastDropTime] = useState<number>(0);
 
   // Legacy single-file progress
   const [progress, setProgress] = useState<TranscodeProgress | null>(null);
@@ -220,14 +278,9 @@ function App() {
     setError(null);
     setProgress(null);
 
-    // Add new files (avoid duplicates)
-    const newPaths = paths.filter((p) => !selectedFiles.includes(p));
-    const allPaths = [...selectedFiles, ...newPaths];
-    setSelectedFiles(allPaths);
-
     // Fetch metadata for each new file
     const newMetadata: (MediaMetadata | null)[] = [];
-    for (const path of newPaths) {
+    for (const path of paths) {
       try {
         const meta = await invoke<MediaMetadata>("get_media_info", {
           filePath: path,
@@ -239,43 +292,39 @@ function App() {
       }
     }
 
-    // Update metadata list, preserving existing metadata
-    setMetadataList((prev) => {
-      const result = [...prev];
-      for (let i = 0; i < newPaths.length; i++) {
-        const pathIndex = allPaths.indexOf(newPaths[i]);
-        result[pathIndex] = newMetadata[i];
-      }
-      // Fill gaps for files that were removed
-      while (result.length < allPaths.length) {
-        result.push(null);
-      }
-      return result.slice(0, allPaths.length);
+    // Use functional state update to avoid closure trap and ensure we get latest state
+    setSelectedFiles((prev) => {
+      const newPaths = paths.filter((p) => !prev.includes(p));
+      return [...prev, ...newPaths];
     });
 
+    // Update metadata list with functional update
+    setMetadataList((prev) => [...prev, ...newMetadata]);
+
     // Set output directory to first file's directory if not set
-    if (newPaths.length > 0 && !outputDir) {
-      const firstPath = newPaths[0];
-      const dirMatch = firstPath.match(/^(.*[/\\])/);
-      if (dirMatch) {
-        setOutputDir(dirMatch[1]);
-      }
+    if (paths.length > 0) {
+      setOutputDir((prev) => {
+        if (!prev) {
+          const firstPath = paths[0];
+          const dirMatch = firstPath.match(/^(.*[/\\])/);
+          return dirMatch ? dirMatch[1] : "";
+        }
+        return prev;
+      });
     }
 
-    // Create tasks for new files
+    // Update tasks with functional update
     setTasks((prev) => {
       const newTasks = [...prev];
-      for (const path of newPaths) {
+      const { suffix, ext } = getPresetOutputInfo(selectedPreset);
+
+      for (const path of paths) {
+        // Skip if this file already exists in tasks
+        if (newTasks.some((task) => task.inputPath === path)) {
+          continue;
+        }
         const fileName = path.split(/[/\\]/).pop() || path;
-        const suffix =
-          selectedPreset === "ProRes422LT"
-            ? "_proreslt"
-            : selectedPreset === "DnxHRHQX"
-              ? "_dnxhr"
-              : selectedPreset === "ProRes420Proxy"
-                ? "_proxy"
-                : "_prores";
-        const outputPath = `${outputDir || ""}${fileName}${suffix}.mov`;
+        const outputPath = `${outputDir || ""}${fileName}${suffix}${ext}`;
 
         newTasks.push({
           inputPath: path,
@@ -293,6 +342,13 @@ function App() {
   useEffect(() => {
     const unlisten = listen<string[]>("tauri://file-drop", async (event) => {
       if (isTranscoding) return;
+
+      // Debounce: only process one drop per 500ms to prevent race conditions
+      const now = Date.now();
+      if (now - lastDropTime < 500) {
+        return;
+      }
+      setLastDropTime(now);
 
       const droppedPaths = event.payload;
       const allVideoFiles: string[] = [];
@@ -318,25 +374,18 @@ function App() {
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [isTranscoding, outputDir, selectedPreset]);
+  }, [isTranscoding, lastDropTime]);
 
   // Update output paths when preset changes
   useEffect(() => {
     if (tasks.length > 0) {
+      const { suffix, ext } = getPresetOutputInfo(selectedPreset);
       setTasks((prevTasks) =>
         prevTasks.map((task) => {
           const fileName = task.inputPath.split(/[/\\]/).pop() || task.inputPath;
-          const suffix =
-            selectedPreset === "ProRes422LT"
-              ? "_proreslt"
-              : selectedPreset === "DnxHRHQX"
-                ? "_dnxhr"
-                : selectedPreset === "ProRes420Proxy"
-                  ? "_proxy"
-                  : "_prores";
           return {
             ...task,
-            outputPath: `${outputDir}${fileName}${suffix}.mov`,
+            outputPath: `${outputDir}${fileName}${suffix}${ext}`,
           };
         })
       );
@@ -347,20 +396,13 @@ function App() {
   // Update output paths when output directory changes
   useEffect(() => {
     if (tasks.length > 0) {
+      const { suffix, ext } = getPresetOutputInfo(selectedPreset);
       setTasks((prevTasks) =>
         prevTasks.map((task) => {
           const fileName = task.inputPath.split(/[/\\]/).pop() || task.inputPath;
-          const suffix =
-            selectedPreset === "ProRes422LT"
-              ? "_proreslt"
-              : selectedPreset === "DnxHRHQX"
-                ? "_dnxhr"
-                : selectedPreset === "ProRes420Proxy"
-                  ? "_proxy"
-                  : "_prores";
           return {
             ...task,
-            outputPath: `${outputDir}${fileName}${suffix}.mov`,
+            outputPath: `${outputDir}${fileName}${suffix}${ext}`,
           };
         })
       );
@@ -498,57 +540,20 @@ function App() {
             <span className="size-label">Total estimated size:</span>{" "}
             <span className="size-value">
               {metadataList.length > 0
-                ? metadataList
-                    .map((meta) =>
-                      meta ? estimateOutputSize(meta, selectedPreset) : "Unknown"
-                    )
-                    .reduce((acc, size) => {
-                      // Simple sum of MB/GB values
-                      const parseSize = (s: string): number => {
-                        if (s.endsWith("GB")) {
-                          return parseFloat(s.replace("~", "").replace(" GB", "")) * 1024;
-                        }
-                        if (s.endsWith("MB")) {
-                          return parseFloat(s.replace("~", "").replace(" MB", ""));
-                        }
-                        return 0;
-                      };
-                      return acc + parseSize(size);
-                    }, 0) > 1024
-                  ? `~${(metadataList
-                      .map((meta) =>
-                        meta ? estimateOutputSize(meta, selectedPreset) : "Unknown"
-                      )
-                      .reduce((acc: number, size: string) => {
-                        const parseSize = (s: string): number => {
-                          if (s.endsWith("GB")) {
-                            return parseFloat(s.replace("~", "").replace(" GB", "")) * 1024;
-                          }
-                          if (s.endsWith("MB")) {
-                            return parseFloat(s.replace("~", "").replace(" MB", ""));
-                          }
-                          return 0;
-                        };
-                        return acc + parseSize(size);
-                      }, 0) / 1024
-                    ).toFixed(1)} GB`
-                  : `~${metadataList
-                      .map((meta) =>
-                        meta ? estimateOutputSize(meta, selectedPreset) : "Unknown"
-                      )
-                      .reduce((acc: number, size: string) => {
-                        const parseSize = (s: string): number => {
-                          if (s.endsWith("GB")) {
-                            return parseFloat(s.replace("~", "").replace(" GB", "")) * 1024;
-                          }
-                          if (s.endsWith("MB")) {
-                            return parseFloat(s.replace("~", "").replace(" MB", ""));
-                          }
-                          return 0;
-                        };
-                        return acc + parseSize(size);
-                      }, 0)
-                    .toFixed(0)} MB`
+                ? (() => {
+                    // Sum up all file sizes (using average of min/max for CRF)
+                    const totalMinMB = metadataList.reduce((acc, meta) => {
+                      if (!meta) return acc;
+                      const size = estimateOutputSize(meta, selectedPreset);
+                      return acc + size.minMB;
+                    }, 0);
+                    const totalMaxMB = metadataList.reduce((acc, meta) => {
+                      if (!meta) return acc;
+                      const size = estimateOutputSize(meta, selectedPreset);
+                      return acc + size.maxMB;
+                    }, 0);
+                    return formatSizeRange(totalMinMB, totalMaxMB);
+                  })()
                 : "Select video files"}
             </span>
           </div>
