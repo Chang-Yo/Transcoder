@@ -6,6 +6,27 @@ use std::process::{Command, Stdio};
 use std::thread;
 use tauri::Window;
 
+// Windows-specific: Hide console window for child processes
+#[cfg(windows)]
+use windows::Win32::System::Threading::CREATE_NO_WINDOW;
+
+/// Extension trait to spawn processes without console window on Windows
+trait SpawnNoConsole {
+    fn spawn_no_console(&mut self) -> Result<std::process::Child, std::io::Error>;
+}
+
+impl SpawnNoConsole for Command {
+    fn spawn_no_console(&mut self) -> Result<std::process::Child, std::io::Error> {
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            self.creation_flags(CREATE_NO_WINDOW.0).spawn()
+        }
+        #[cfg(not(windows))]
+        self.spawn()
+    }
+}
+
 pub fn spawn_transcode_job(
     job_id: String,
     request: TranscodeRequest,
@@ -70,11 +91,11 @@ fn run_transcode(
     // Build ffmpeg command from preset
     let args = request.preset.build_ffmpeg_args(&metadata, &request.output_path);
 
-    // Spawn ffmpeg with stderr piped for progress parsing
+    // Spawn ffmpeg with stderr piped for progress parsing (no console window)
     let mut child = Command::new("ffmpeg")
         .args(&args)
         .stderr(Stdio::piped())
-        .spawn()
+        .spawn_no_console()
         .map_err(|e| TranscodeError::TranscodeFailed(e.to_string()))?;
 
     // Parse progress from stderr
@@ -121,11 +142,11 @@ fn run_batch_transcode(
     // Build ffmpeg command from preset
     let args = request.preset.build_ffmpeg_args(&metadata, &request.output_path);
 
-    // Spawn ffmpeg with stderr piped for progress parsing
+    // Spawn ffmpeg with stderr piped for progress parsing (no console window)
     let mut child = Command::new("ffmpeg")
         .args(&args)
         .stderr(Stdio::piped())
-        .spawn()
+        .spawn_no_console()
         .map_err(|e| TranscodeError::TranscodeFailed(e.to_string()))?;
 
     // Parse progress from stderr
