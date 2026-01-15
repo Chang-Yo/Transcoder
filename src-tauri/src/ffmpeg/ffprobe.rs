@@ -1,4 +1,5 @@
 use crate::error::TranscodeError;
+use crate::ffmpeg::SpawnNoConsole;
 use crate::models::{AudioStream, MediaMetadata, VideoStream};
 use serde_json::Value;
 use std::process::Command;
@@ -15,7 +16,7 @@ pub async fn extract_metadata(file_path: &str) -> Result<MediaMetadata, Box<dyn 
             "json",
             file_path,
         ])
-        .output()?;
+        .output_no_console()?;
 
     if !output.status.success() {
         return Err(Box::new(TranscodeError::MediaInfoFailed(

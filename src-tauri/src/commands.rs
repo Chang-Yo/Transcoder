@@ -69,8 +69,9 @@ pub async fn start_batch_transcode(
         let suffix = match request.preset {
             crate::models::OutputPreset::ProRes422 => "_prores",
             crate::models::OutputPreset::ProRes422LT => "_proreslt",
-            crate::models::OutputPreset::ProRes420Proxy => "_proxy",
+            crate::models::OutputPreset::ProRes422Proxy => "_proxy",
             crate::models::OutputPreset::DnxHRHQX => "_dnxhr",
+            crate::models::OutputPreset::H264Crf18 => "_h264",
         };
         let output_path = format!(
             "{}/{}{}.mov",

@@ -1,29 +1,11 @@
 use crate::error::TranscodeError;
 use crate::ffmpeg::ffprobe;
+use crate::ffmpeg::SpawnNoConsole;
 use crate::models::{BatchProgress, TranscodeProgress, TranscodeRequest};
 use std::io::BufRead;
 use std::process::{Command, Stdio};
 use std::thread;
 use tauri::Window;
-
-/// Extension trait to spawn processes without console window on Windows
-trait SpawnNoConsole {
-    fn spawn_no_console(&mut self) -> Result<std::process::Child, std::io::Error>;
-}
-
-impl SpawnNoConsole for Command {
-    fn spawn_no_console(&mut self) -> Result<std::process::Child, std::io::Error> {
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            // CREATE_NO_WINDOW = 0x08000000 - prevents creating a console window
-            const CREATE_NO_WINDOW: u32 = 0x08000000;
-            self.creation_flags(CREATE_NO_WINDOW).spawn()
-        }
-        #[cfg(not(windows))]
-        self.spawn()
-    }
-}
 
 pub fn spawn_transcode_job(
     job_id: String,

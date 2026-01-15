@@ -34,10 +34,12 @@ pub enum OutputPreset {
     ProRes422,
     #[serde(rename = "ProRes422LT")]
     ProRes422LT,
-    #[serde(rename = "ProRes420Proxy")]
-    ProRes420Proxy,
+    #[serde(rename = "ProRes422Proxy")]
+    ProRes422Proxy,
     #[serde(rename = "DnxHRHQX")]
     DnxHRHQX,
+    #[serde(rename = "H264Crf18")]
+    H264Crf18,
 }
 
 /// Transcode request from frontend
