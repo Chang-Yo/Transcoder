@@ -3,7 +3,9 @@
     "allow": [
       "WebSearch",
       "Bash(tree:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(cargo check:*)",
+      "Bash(npm run tauri build:*)"
     ]
   }
 }

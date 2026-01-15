@@ -71,11 +71,16 @@ pub async fn start_batch_transcode(
             crate::models::OutputPreset::DnxHRHQX => "_dnxhr",
             crate::models::OutputPreset::H264Crf18 => "_h264",
         };
+        let ext = match request.preset {
+            crate::models::OutputPreset::H264Crf18 => "mp4",
+            _ => "mov",
+        };
         let output_path = format!(
-            "{}/{}{}.mov",
+            "{}/{}{}.{}",
             request.output_dir.trim_end_matches('/'),
             file_name,
-            suffix
+            suffix,
+            ext
         );
 
         let transcode_request = TranscodeRequest {

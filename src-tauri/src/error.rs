@@ -3,11 +3,11 @@ use serde::{Serialize, Deserialize};
 /// Errors that can occur during transcoding
 #[derive(Debug, thiserror::Error)]
 pub enum TranscodeError {
-    #[error("ffmpeg not found in system PATH")]
-    FfmpegNotFound,
+    #[error("ffmpeg not found: {0}")]
+    FfmpegNotFound(String),
 
-    #[error("ffprobe not found in system PATH")]
-    FfprobeNotFound,
+    #[error("ffprobe not found: {0}")]
+    FfprobeNotFound(String),
 
     #[error("Failed to read media info: {0}")]
     MediaInfoFailed(String),

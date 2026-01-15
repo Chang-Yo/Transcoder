@@ -1,17 +1,18 @@
 use crate::error::{CmdError, TranscodeError};
+use crate::ffmpeg::locator;
 
-/// Find ffmpeg executable in PATH
+/// Find ffmpeg executable (bundled or system PATH)
 pub fn find_ffmpeg() -> Result<String, TranscodeError> {
-    which::which("ffmpeg")
+    locator::get_ffmpeg_path()
         .map(|p| p.to_string_lossy().to_string())
-        .map_err(|_| TranscodeError::FfmpegNotFound)
+        .map_err(|e| TranscodeError::FfmpegNotFound(e))
 }
 
-/// Find ffprobe executable in PATH
+/// Find ffprobe executable (bundled or system PATH)
 pub fn find_ffprobe() -> Result<String, TranscodeError> {
-    which::which("ffprobe")
+    locator::get_ffprobe_path()
         .map(|p| p.to_string_lossy().to_string())
-        .map_err(|_| TranscodeError::FfprobeNotFound)
+        .map_err(|e| TranscodeError::FfprobeNotFound(e))
 }
 
 /// Ensure ffmpeg is available
