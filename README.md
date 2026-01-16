@@ -8,12 +8,11 @@
 
 | 文件                                                                                            | 大小   | 说明                         |
 | ----------------------------------------------------------------------------------------------- | ------ | ---------------------------- |
-| [transcoder.exe](../../releases/download/v0.1.0/transcoder.exe)                                 | 195 MB | 独立可执行文件，双击即可运行 |
-| [transcoder_0.1.0_x64-setup.exe](../../releases/download/v0.1.0/transcoder_0.1.0_x64-setup.exe) | 54 MB  | NSIS 安装程序（推荐）        |
+| [transcoder-v0.2.0-windows.zip](../../releases/download/v0.2.0/transcoder-v0.2.0-windows.zip)       | 71 MB  | **推荐** — 解压即可运行      |
 
 **系统要求：** Windows 10/11 (64-bit)
 
-**注意：** FFmpeg 已内置，无需单独安装。
+**使用方法：** 下载后解压 zip 文件，双击 `transcoder.exe` 即可运行。FFmpeg 已内置在 `ffmpeg/` 文件夹中，无需单独安装。
 
 ## 功能特性
 
@@ -69,21 +68,17 @@
 
 ### 常见问题
 
+**Q: 如何使用这个软件？**
+
+A: 下载 zip 文件后解压，双击 `transcoder.exe` 即可运行。无需安装，FFmpeg 已内置。
+
 **Q: Windows Defender 提示"未知发布者"怎么办？**
 
 A: 这是正常现象。点击 "更多信息" → "仍要运行" 即可。
 
-**Q: 首次运行为什么比较慢？**
-
-A: 首次运行需要将内置的 FFmpeg 提取到临时目录，约需几秒钟。
-
 **Q: 支持哪些输入格式？**
 
 A: 支持 FFmpeg 能解码的所有视频格式，包括 MP4、MKV、AVI、MOV、WEBM 等。
-
-**Q: 可以在 macOS 上运行吗？**
-
-A: 目前仅支持 Windows，macOS 版本开发中。
 
 ## 从源码构建
 
@@ -115,17 +110,22 @@ npm run tauri build
 
 - **前端：** TypeScript + React + Vite
 - **后端：** Rust + Tauri
-- **媒体处理：** FFmpeg（通过 rust-embed 内置）
+- **媒体处理：** FFmpeg
 
 ## 更新日志
+
+### v0.2.0 (2025-01-16)
+
+- 改用 zip 分发包格式，解压即可运行
+- FFmpeg 独立存放于 `ffmpeg/` 文件夹，更易于维护
+- 主程序体积从 195 MB 减小至约 6 MB
+- 优先使用系统 FFmpeg（如果存在），否则使用内置版本
 
 ### v0.1.0 (2025-01-15)
 
 - 初始发布
 - 支持 ProRes 422 系列、DNxHR HQX、H.264 CRF 18 预设
 - 批量转码功能
-- 内置 FFmpeg，无需外部依赖
-- 优先使用系统 FFmpeg（如果存在），否则使用内置版本
 
 ## 开源许可
 

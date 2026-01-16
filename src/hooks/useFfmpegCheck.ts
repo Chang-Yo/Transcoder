@@ -5,7 +5,7 @@ import type { FfmpegAvailability } from "../types";
 export function useFfmpegCheck() {
   const [ffmpegAvailable, setFfmpegAvailable] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [ffmpegSource, setFfmpegSource] = useState<"system" | "embedded" | "filesystem" | null>(null);
+  const [ffmpegSource, setFfmpegSource] = useState<"system" | "filesystem" | null>(null);
 
   useEffect(() => {
     invoke<FfmpegAvailability>("check_ffmpeg_available")

@@ -168,11 +168,11 @@ function App() {
 
   const { ffmpegAvailable, checking, ffmpegSource } = useFfmpegCheck();
 
-  // Show notification if using embedded FFmpeg
+  // Show notification if using bundled FFmpeg
   useEffect(() => {
-    if (ffmpegSource === "embedded") {
+    if (ffmpegSource === "filesystem") {
       // Show a one-time notification that we're using bundled FFmpeg
-      console.log("Using bundled FFmpeg from application");
+      console.log("Using bundled FFmpeg from ffmpeg/ folder");
     }
   }, [ffmpegSource]);
 
@@ -493,7 +493,7 @@ function App() {
       <h1>Editing Transcoder</h1>
       <p className="subtitle">Convert videos to editing-friendly formats</p>
 
-      {ffmpegSource === "embedded" && (
+      {ffmpegSource === "filesystem" && (
         <div className="info-banner">
           <span className="info-icon"></span>
           <span>Using bundled FFmpeg (system FFmpeg not found)</span>

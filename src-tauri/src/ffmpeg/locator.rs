@@ -1,13 +1,10 @@
-use crate::ffmpeg::embedded::FfmpegBinaries;
 use std::env;
-use std::fs;
 use std::path::PathBuf;
 
 /// FFmpeg source for user notification
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FfmpegSource {
     System,
-    Embedded,
     Filesystem,
 }
 
@@ -18,14 +15,9 @@ pub fn get_ffmpeg_path_with_source() -> Result<(PathBuf, FfmpegSource), String> 
         return Ok((path, FfmpegSource::System));
     }
 
-    // Then try filesystem bundled version
+    // Then try filesystem bundled version (in ffmpeg/ subdirectory)
     if let Some(exe_path) = get_filesystem_binary("ffmpeg.exe") {
         return Ok((exe_path, FfmpegSource::Filesystem));
-    }
-
-    // Finally, try embedded binaries
-    if let Ok(path) = get_embedded_binary("ffmpeg.exe") {
-        return Ok((path, FfmpegSource::Embedded));
     }
 
     Err("ffmpeg not found".to_string())
@@ -44,14 +36,9 @@ pub fn get_ffprobe_path_with_source() -> Result<(PathBuf, FfmpegSource), String>
         return Ok((path, FfmpegSource::System));
     }
 
-    // Then try filesystem bundled version
+    // Then try filesystem bundled version (in ffmpeg/ subdirectory)
     if let Some(exe_path) = get_filesystem_binary("ffprobe.exe") {
         return Ok((exe_path, FfmpegSource::Filesystem));
-    }
-
-    // Finally, try embedded binaries
-    if let Ok(path) = get_embedded_binary("ffprobe.exe") {
-        return Ok((path, FfmpegSource::Embedded));
     }
 
     Err("ffprobe not found".to_string())
@@ -63,44 +50,9 @@ pub fn get_ffprobe_path() -> Result<PathBuf, String> {
         .map(|(path, _)| path)
 }
 
-/// Extract embedded binary to temp directory and return its path
-fn get_embedded_binary(name: &str) -> Result<PathBuf, String> {
-    // Try to get the file from embedded assets
-    let embedded_file = FfmpegBinaries::get(name)
-        .ok_or_else(|| format!("{} not found in embedded binaries", name))?;
-
-    // Create a temp directory for extracted binaries
-    let temp_dir = env::temp_dir()
-        .join("transcoder-ffmpeg");
-
-    // Ensure temp directory exists
-    fs::create_dir_all(&temp_dir)
-        .map_err(|e| format!("Failed to create temp directory: {}", e))?;
-
-    let output_path = temp_dir.join(name);
-
-    // Only extract if it doesn't exist or is different
-    let needs_extraction = if output_path.exists() {
-        // Check size to see if we need to re-extract
-        let current_size = fs::metadata(&output_path)
-            .map(|m| m.len())
-            .unwrap_or(0);
-        current_size != embedded_file.data.len() as u64
-    } else {
-        true
-    };
-
-    if needs_extraction {
-        fs::write(&output_path, embedded_file.data)
-            .map_err(|e| format!("Failed to write {}: {}", name, e))?;
-    }
-
-    Ok(output_path)
-}
-
-/// Get path to filesystem binary (for dev mode or legacy installs)
+/// Get path to filesystem binary (in ffmpeg/ subdirectory)
 fn get_filesystem_binary(name: &str) -> Option<PathBuf> {
-    // In development, look in binaries/ directory
+    // In development, look in binaries/windows/ directory
     let dev_path = PathBuf::from("binaries")
         .join("windows")
         .join(name);
@@ -109,17 +61,12 @@ fn get_filesystem_binary(name: &str) -> Option<PathBuf> {
         return Some(dev_path);
     }
 
-    // In production, look alongside the executable
+    // In production, look in ffmpeg/ subdirectory alongside the executable
     if let Some(exe_dir) = get_exe_dir() {
-        let prod_path = exe_dir.join(name);
+        let ffmpeg_dir = exe_dir.join("ffmpeg");
+        let prod_path = ffmpeg_dir.join(name);
         if prod_path.exists() {
             return Some(prod_path);
-        }
-
-        // Check resources subdirectory (NSIS installer structure)
-        let resource_path = exe_dir.join("resources").join("binaries").join("windows").join(name);
-        if resource_path.exists() {
-            return Some(resource_path);
         }
     }
 

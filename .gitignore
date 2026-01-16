@@ -27,3 +27,6 @@ node_modules/
 
 # FFmpeg binaries (downloaded separately)
 src-tauri/binaries/
+
+dist-package/
+dist-release/

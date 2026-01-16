@@ -1,4 +1,3 @@
-pub mod embedded;
 pub mod locator;
 pub use locator::FfmpegSource;
 pub mod validator;

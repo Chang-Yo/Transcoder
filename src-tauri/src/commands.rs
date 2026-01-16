@@ -29,7 +29,6 @@ pub async fn check_ffmpeg_available() -> Result<FfmpegAvailability, CmdError> {
 fn source_to_string(source: FfmpegSource) -> String {
     match source {
         FfmpegSource::System => "system".to_string(),
-        FfmpegSource::Embedded => "embedded".to_string(),
         FfmpegSource::Filesystem => "filesystem".to_string(),
     }
 }
