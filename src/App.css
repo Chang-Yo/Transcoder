@@ -149,6 +149,60 @@ h1 {
   text-align: left;
 }
 
+/* Output filename editor */
+.output-filename-editor {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+}
+
+.output-label {
+  color: #666;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.filename-input {
+  flex: 1;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background-color: #fff;
+  transition: border-color 0.2s;
+}
+
+.filename-input:focus {
+  outline: none;
+  border-color: #396cd8;
+}
+
+.filename-input:disabled {
+  background-color: #f0f0f0;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.file-extension {
+  color: #888;
+  font-size: 0.85rem;
+  font-family: monospace;
+  background-color: #f0f0f0;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.preset-update-notice {
+  font-size: 0.75rem;
+  color: #f57c00;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
 .file-list {
   list-style: none;
   padding: 0;
@@ -764,5 +818,30 @@ a:hover {
 
   .info-icon {
     background-color: #1976d2;
+  }
+
+  /* Dark mode filename editor */
+  .filename-input {
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #ffffff;
+  }
+
+  .filename-input:focus {
+    border-color: #396cd8;
+  }
+
+  .filename-input:disabled {
+    background-color: #1a1a1a;
+    color: #888;
+  }
+
+  .file-extension {
+    background-color: #2a2a2a;
+    color: #aaa;
+  }
+
+  .output-label {
+    color: #aaa;
   }
 }

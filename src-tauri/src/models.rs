@@ -75,7 +75,7 @@ pub struct FfmpegAvailability {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BatchTranscodeRequest {
     pub input_paths: Vec<String>,
-    pub output_dir: String,
+    pub output_paths: Vec<String>,  // Full output paths for each input file
     pub preset: OutputPreset,
 }
 

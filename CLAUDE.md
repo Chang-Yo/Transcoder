@@ -30,18 +30,20 @@ This is an **Editing Transcoder** - a desktop application built with **Tauri + R
 - Output file size estimation (based on metadata)
 - Display transcoding progress
 - Display error messages
-- Auto-generate output path based on selected preset
+- **Custom output filename editing** - Users can edit output filenames (suffix/extension remain read-only, controlled by preset)
+- Generate complete output paths for backend (no path generation on backend side)
 
 ---
 
 ## Output Presets
 
-The tool supports four video output presets (user-selectable via card-based UI):
+The tool supports five video output presets (user-selectable via card-based UI):
 
 1. **ProRes 422** (recommended) - Main editing format, intra-frame compression, 10-bit, 4:2:2 (~147 Mbps at 1080p)
 2. **ProRes 422 LT** - For disk-space constrained scenarios (~102 Mbps at 1080p)
 3. **ProRes 422 Proxy** - Low-bitrate proxy for offline editing (~36 Mbps at 1080p), 8-bit, 4:2:0, AAC audio
 4. **DNxHR HQX** - Windows-friendly alternative, also 10-bit/4:2:2 (~295 Mbps at 1080p)
+5. **H.264 CRF 18** - High quality H.264 for web sharing, 8-bit, 4:2:0, AAC audio (~25 Mbps at 1080p, variable)
 
 ### Output File Size Estimation
 
@@ -54,9 +56,9 @@ Estimation is displayed after selecting a file and updates when switching preset
 
 ### Audio Output Strategy (Automatic)
 - **Regular presets** (ProRes 422, ProRes 422 LT, DNxHR HQX): All input audio → **PCM 16-bit (uncompressed)**
-- **Proxy preset** (ProRes 422 Proxy): All input audio → **AAC 320kbps**
+- **Proxy/H.264 presets** (ProRes 422 Proxy, H.264 CRF 18): All input audio → **AAC 320kbps**
 - Rationale for PCM: Native Adobe support, avoids audio decoding/compatibility issues
-- Rationale for AAC (Proxy): Significantly reduced file size while maintaining acceptable quality for offline editing
+- Rationale for AAC: Significantly reduced file size while maintaining acceptable quality for offline editing/web sharing
 
 ---
 
@@ -77,7 +79,19 @@ Estimation is displayed after selecting a file and updates when switching preset
 - **v0.2**: Auto-detect 8/10-bit, auto audio → PCM ✅
 - **v0.3**: Multiple preset support (ProRes LT, DNxHR), output size estimation ✅
 - **v0.4**: Batch queue, parallel transcoding, progress tracking ✅
-- **v0.5**: Low-size Proxy preset with AAC audio
+- **v0.5**: Low-size Proxy preset with AAC audio ✅
+- **v0.6**: Custom output filename editing, H.264 CRF 18 preset, code cleanup ✅
+
+---
+
+## Code Quality Standards
+
+When working on this codebase:
+- Follow existing naming conventions (camelCase for TypeScript, snake_case for Rust)
+- Use `task.id` as React keys, not array indices
+- Extract duplicated logic into shared utility functions
+- Keep frontend-backend type definitions in sync (check `types/index.ts` vs `models.rs`)
+- Avoid unused variables - prefix with underscore if intentionally unused
 
 ---
 

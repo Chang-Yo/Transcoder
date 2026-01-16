@@ -7,24 +7,18 @@ use std::process::{Command, Stdio};
 use std::thread;
 use tauri::Window;
 
+/// Progress event type for different transcode modes
+enum ProgressMode {
+    Single,
+    Batch { batch_id: String, file_index: usize, total_files: usize },
+}
+
 pub fn spawn_transcode_job(
-    job_id: String,
+    _job_id: String,
     request: TranscodeRequest,
     window: Window,
 ) -> Result<(), TranscodeError> {
-    thread::spawn(move || {
-        let result = run_transcode(&job_id, &request, &window);
-
-        // Emit completion event
-        let event = if result.is_ok() {
-            "transcode-complete"
-        } else {
-            "transcode-error"
-        };
-
-        let _ = window.emit(event, job_id);
-    });
-
+    spawn_transcode_with_mode(request, window, ProgressMode::Single);
     Ok(())
 }
 
@@ -36,36 +30,55 @@ pub fn spawn_batch_transcode_job(
     request: TranscodeRequest,
     window: Window,
 ) -> Result<(), TranscodeError> {
-    thread::spawn(move || {
-        let result = run_batch_transcode(
-            &batch_id,
-            file_index,
-            total_files,
-            &request,
-            &window,
-        );
-
-        // Emit completion event with batch info
-        let event = if result.is_ok() {
-            "batch-transcode-complete"
-        } else {
-            "batch-transcode-error"
-        };
-
-        let _ = window.emit(event, (batch_id, file_index));
-    });
-
+    spawn_transcode_with_mode(
+        request,
+        window,
+        ProgressMode::Batch { batch_id, file_index, total_files },
+    );
     Ok(())
 }
 
-fn run_transcode(
-    _job_id: &str,
+/// Core spawn function that handles both single and batch transcode
+fn spawn_transcode_with_mode(request: TranscodeRequest, window: Window, mode: ProgressMode) {
+    thread::spawn(move || {
+        let result = execute_transcode(&request, &window, &mode);
+
+        // Emit completion event based on mode
+        match mode {
+            ProgressMode::Single => {
+                let event = if result.is_ok() {
+                    "transcode-complete"
+                } else {
+                    "transcode-error"
+                };
+                let _ = window.emit(event, request.input_path);
+            }
+            ProgressMode::Batch {
+                batch_id,
+                file_index,
+                ..
+            } => {
+                let event = if result.is_ok() {
+                    "batch-transcode-complete"
+                } else {
+                    "batch-transcode-error"
+                };
+                let _ = window.emit(event, (batch_id, file_index));
+            }
+        }
+    });
+}
+
+/// Execute the transcode process with progress reporting
+fn execute_transcode(
     request: &TranscodeRequest,
     window: &Window,
+    mode: &ProgressMode,
 ) -> Result<(), TranscodeError> {
-    // First, get metadata for duration calculation
+    // Get metadata for duration calculation
     let rt = tokio::runtime::Runtime::new()?;
-    let metadata = rt.block_on(ffprobe::extract_metadata(&request.input_path))
+    let metadata = rt
+        .block_on(ffprobe::extract_metadata(&request.input_path))
         .map_err(|e| TranscodeError::MediaInfoFailed(e.to_string()))?;
 
     // Build ffmpeg command from preset
@@ -89,7 +102,7 @@ fn run_transcode(
         let line = line.map_err(|e| TranscodeError::TranscodeFailed(e.to_string()))?;
 
         if let Some(progress) = parse_ffmpeg_progress(&line, &metadata) {
-            let _ = window.emit("transcode-progress", progress);
+            emit_progress(window, mode, progress);
         }
     }
 
@@ -106,66 +119,34 @@ fn run_transcode(
     Ok(())
 }
 
-/// Run transcode for batch processing with batch_id and file_index
-fn run_batch_transcode(
-    batch_id: &str,
-    file_index: usize,
-    _total_files: usize,
-    request: &TranscodeRequest,
-    window: &Window,
-) -> Result<(), TranscodeError> {
-    // First, get metadata for duration calculation
-    let rt = tokio::runtime::Runtime::new()?;
-    let metadata = rt.block_on(ffprobe::extract_metadata(&request.input_path))
-        .map_err(|e| TranscodeError::MediaInfoFailed(e.to_string()))?;
-
-    // Build ffmpeg command from preset
-    let args = request.preset.build_ffmpeg_args(&metadata, &request.output_path);
-
-    // Spawn ffmpeg with stderr piped for progress parsing (no console window)
-    let mut child = Command::new("ffmpeg")
-        .args(&args)
-        .stderr(Stdio::piped())
-        .spawn_no_console()
-        .map_err(|e| TranscodeError::TranscodeFailed(e.to_string()))?;
-
-    // Parse progress from stderr
-    let stderr = child
-        .stderr
-        .take()
-        .ok_or(TranscodeError::TranscodeFailed("No stderr".to_string()))?;
-    let reader = std::io::BufReader::new(stderr);
-
-    for line in reader.lines() {
-        let line = line.map_err(|e| TranscodeError::TranscodeFailed(e.to_string()))?;
-
-        if let Some(progress) = parse_ffmpeg_progress(&line, &metadata) {
+/// Emit progress event based on the current mode
+fn emit_progress(window: &Window, mode: &ProgressMode, progress: TranscodeProgress) {
+    match mode {
+        ProgressMode::Single => {
+            let _ = window.emit("transcode-progress", progress);
+        }
+        ProgressMode::Batch {
+            batch_id,
+            file_index,
+            total_files,
+        } => {
             let batch_progress = BatchProgress {
-                batch_id: batch_id.to_string(),
-                file_index,
-                total_files: _total_files,
+                batch_id: batch_id.clone(),
+                file_index: *file_index,
+                total_files: *total_files,
                 progress,
             };
             let _ = window.emit("batch-transcode-progress", batch_progress);
         }
     }
-
-    let status = child
-        .wait()
-        .map_err(|e| TranscodeError::TranscodeFailed(e.to_string()))?;
-
-    if !status.success() {
-        return Err(TranscodeError::TranscodeFailed(
-            "ffmpeg returned non-zero exit code".to_string(),
-        ));
-    }
-
-    Ok(())
 }
 
 /// Parse ffmpeg progress output.
 /// Example line: frame= 123 fps=25 q=12.0 size= 12345kB time=00:00:05.00 bitrate= 1234.5kbits/s speed=1.00x
-fn parse_ffmpeg_progress(line: &str, metadata: &crate::models::MediaMetadata) -> Option<TranscodeProgress> {
+fn parse_ffmpeg_progress(
+    line: &str,
+    metadata: &crate::models::MediaMetadata,
+) -> Option<TranscodeProgress> {
     if !line.contains("frame=") {
         return None;
     }

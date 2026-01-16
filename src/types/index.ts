@@ -43,7 +43,7 @@ export interface FfmpegAvailability {
 // Batch transcoding types
 export interface BatchTranscodeRequest {
   input_paths: string[];
-  output_dir: string;
+  output_paths: string[];  // Full output paths for each input file
   preset: OutputPreset;
 }
 
@@ -57,9 +57,17 @@ export interface BatchProgress {
 export type FileTaskStatus = "pending" | "transcoding" | "completed" | "failed";
 
 export interface FileTask {
-  inputPath: string;
-  outputPath: string;
-  fileName: string;
+  id: string;              // Unique identifier (inputPath serves as ID)
+  inputPath: string;       // Full input file path
+  outputFileName: string;  // User-editable base file name (without suffix/extension)
+  suffix: string;          // Preset-determined suffix (e.g., "_prores")
+  extension: string;       // File extension (e.g., ".mov")
   status: FileTaskStatus;
   progress: TranscodeProgress | null;
+  originalFileName: string; // Original input file name for display
+}
+
+// Helper to get the full output path from a FileTask
+export function getOutputPath(task: FileTask, outputDir: string): string {
+  return `${outputDir}${task.outputFileName}${task.suffix}${task.extension}`;
 }

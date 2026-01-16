@@ -1,8 +1,11 @@
-import type { FileTask } from "../types";
+import type { FileTask, OutputPreset } from "../types";
 
 interface BatchQueueProps {
   tasks: FileTask[];
-  onRemoveTask: (index: number) => void;
+  outputDir: string;
+  selectedPreset: OutputPreset;
+  onRemoveTask: (id: string) => void;
+  onUpdateFileName: (id: string, newFileName: string) => void;
 }
 
 const statusIcons: Record<FileTask["status"], string> = {
@@ -19,15 +22,38 @@ const statusLabels: Record<FileTask["status"], string> = {
   failed: "Failed",
 };
 
-export function BatchQueue({ tasks, onRemoveTask }: BatchQueueProps) {
+export function BatchQueue({
+  tasks,
+  outputDir: _outputDir,  // Reserved for future use (e.g., showing full output path)
+  selectedPreset,
+  onRemoveTask,
+  onUpdateFileName,
+}: BatchQueueProps) {
   if (tasks.length === 0) return null;
 
   const completedCount = tasks.filter((t) => t.status === "completed").length;
   const failedCount = tasks.filter((t) => t.status === "failed").length;
   const totalCount = tasks.length;
-  const overallProgress = totalCount > 0
-    ? (completedCount / totalCount) * 100
-    : 0;
+  const overallProgress =
+    totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+  // Get suffix and extension for the current preset
+  function getPresetInfo(preset: OutputPreset): { suffix: string; ext: string } {
+    switch (preset) {
+      case "ProRes422LT":
+        return { suffix: "_proreslt", ext: ".mov" };
+      case "DnxHRHQX":
+        return { suffix: "_dnxhr", ext: ".mov" };
+      case "ProRes422Proxy":
+        return { suffix: "_proxy", ext: ".mov" };
+      case "H264Crf18":
+        return { suffix: "_h264", ext: ".mp4" };
+      default:
+        return { suffix: "_prores", ext: ".mov" };
+    }
+  }
+
+  const { suffix: currentSuffix, ext: currentExt } = getPresetInfo(selectedPreset);
 
   return (
     <div className="batch-queue">
@@ -36,9 +62,9 @@ export function BatchQueue({ tasks, onRemoveTask }: BatchQueueProps) {
         <button
           className="clear-button"
           onClick={() => {
-            for (let i = tasks.length - 1; i >= 0; i--) {
-              if (tasks[i].status === "completed" || tasks[i].status === "failed") {
-                onRemoveTask(i);
+            for (const task of tasks) {
+              if (task.status === "completed" || task.status === "failed") {
+                onRemoveTask(task.id);
               }
             }
           }}
@@ -49,17 +75,43 @@ export function BatchQueue({ tasks, onRemoveTask }: BatchQueueProps) {
       </div>
 
       <div className="queue-list">
-        {tasks.map((task, index) => (
-          <div key={index} className={`queue-item status-${task.status}`}>
+        {tasks.map((task) => (
+          <div key={task.id} className={`queue-item status-${task.status}`}>
             <div className="queue-item-header">
               <span className="file-info">
                 <span className="status-icon">{statusIcons[task.status]}</span>
                 <span className="file-name" title={task.inputPath}>
-                  {task.fileName}
+                  {task.originalFileName}
                 </span>
               </span>
               <span className="status-label">{statusLabels[task.status]}</span>
             </div>
+
+            {/* Output file name editor */}
+            <div className="output-filename-editor">
+              <span className="output-label">Output:</span>
+              <input
+                type="text"
+                className="filename-input"
+                value={task.outputFileName}
+                onChange={(e) => onUpdateFileName(task.id, e.target.value)}
+                disabled={task.status !== "pending"}
+                placeholder="Enter file name"
+              />
+              <span className="file-extension">
+                {task.suffix}
+                {task.extension}
+              </span>
+            </div>
+
+            {/* Show preset mismatch warning if needed */}
+            {selectedPreset !== "ProRes422" &&
+              (task.suffix !== currentSuffix || task.extension !== currentExt) && (
+                <div className="preset-update-notice">
+                  This file will use {currentSuffix}
+                  {currentExt} when transcoding starts
+                </div>
+              )}
 
             {task.status === "transcoding" && task.progress && (
               <div className="queue-item-progress">
@@ -101,7 +153,7 @@ export function BatchQueue({ tasks, onRemoveTask }: BatchQueueProps) {
             {task.status === "pending" && (
               <button
                 className="remove-task-button"
-                onClick={() => onRemoveTask(index)}
+                onClick={() => onRemoveTask(task.id)}
               >
                 Remove
               </button>

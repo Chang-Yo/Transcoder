@@ -6,7 +6,8 @@
       "Bash(dir:*)",
       "Bash(cargo check:*)",
       "Bash(npm run tauri build:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(npm run check:*)"
     ]
   }
 }

@@ -69,44 +69,26 @@ pub async fn start_batch_transcode(
         return Err(TranscodeError::InvalidInput("No files provided".to_string()).into());
     }
 
+    if request.input_paths.len() != request.output_paths.len() {
+        return Err(TranscodeError::InvalidInput(
+            "input_paths and output_paths must have the same length".to_string()
+        ).into());
+    }
+
     // Generate a batch ID
     let batch_id = uuid::Uuid::new_v4().to_string();
     let total_files = request.input_paths.len();
 
     // Start transcode job for each file in parallel
-    for (index, input_path) in request.input_paths.iter().enumerate() {
+    for (index, (input_path, output_path)) in request.input_paths.iter().zip(request.output_paths.iter()).enumerate() {
         let file_index = index;
         let total = total_files;
         let batch_id_clone = batch_id.clone();
         let window_clone = window.clone();
 
-        // Generate output path for this file
-        let file_name = std::path::Path::new(input_path)
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("output");
-        let suffix = match request.preset {
-            crate::models::OutputPreset::ProRes422 => "_prores",
-            crate::models::OutputPreset::ProRes422LT => "_proreslt",
-            crate::models::OutputPreset::ProRes422Proxy => "_proxy",
-            crate::models::OutputPreset::DnxHRHQX => "_dnxhr",
-            crate::models::OutputPreset::H264Crf18 => "_h264",
-        };
-        let ext = match request.preset {
-            crate::models::OutputPreset::H264Crf18 => "mp4",
-            _ => "mov",
-        };
-        let output_path = format!(
-            "{}/{}{}.{}",
-            request.output_dir.trim_end_matches('/'),
-            file_name,
-            suffix,
-            ext
-        );
-
         let transcode_request = TranscodeRequest {
             input_path: input_path.clone(),
-            output_path,
+            output_path: output_path.clone(),
             preset: request.preset,
         };
 

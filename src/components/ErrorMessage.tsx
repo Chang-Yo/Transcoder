@@ -1,4 +1,3 @@
-
 interface ErrorMessageProps {
   message: string;
   onDismiss?: () => void;

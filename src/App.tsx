@@ -15,6 +15,7 @@ import type {
   FileTask,
   BatchProgress,
 } from "./types";
+import { getOutputPath } from "./types";
 
 // Supported video file extensions
 const VIDEO_EXTENSIONS = [
@@ -25,6 +26,18 @@ const VIDEO_EXTENSIONS = [
 function isVideoFile(path: string): boolean {
   const ext = path.split(".").pop()?.toLowerCase();
   return ext ? VIDEO_EXTENSIONS.includes(ext) : false;
+}
+
+// Extract file name from path (utility function)
+function getFileName(path: string): string {
+  return path.split(/[/\\]/).pop() || path;
+}
+
+// Extract base file name without extension
+function getBaseFileName(path: string): string {
+  const fileName = getFileName(path);
+  const lastDotIndex = fileName.lastIndexOf(".");
+  return lastDotIndex > 0 ? fileName.slice(0, lastDotIndex) : fileName;
 }
 
 // Read video files from a folder (non-recursive)
@@ -328,18 +341,21 @@ function App() {
 
       for (const path of paths) {
         // Skip if this file already exists in tasks
-        if (newTasks.some((task) => task.inputPath === path)) {
+        if (newTasks.some((task) => task.id === path)) {
           continue;
         }
-        const fileName = path.split(/[/\\]/).pop() || path;
-        const outputPath = `${outputDir || ""}${fileName}${suffix}${ext}`;
+        const originalFileName = getFileName(path);
+        const baseFileName = getBaseFileName(path);
 
         newTasks.push({
+          id: path,
           inputPath: path,
-          outputPath,
-          fileName,
+          outputFileName: baseFileName,
+          suffix,
+          extension: ext,
           status: "pending",
           progress: null,
+          originalFileName,
         });
       }
       return newTasks;
@@ -384,48 +400,39 @@ function App() {
     };
   }, [isTranscoding, lastDropTime]);
 
-  // Update output paths when preset changes
+  // Update suffix and extension when preset changes
   useEffect(() => {
     if (tasks.length > 0) {
       const { suffix, ext } = getPresetOutputInfo(selectedPreset);
       setTasks((prevTasks) =>
-        prevTasks.map((task) => {
-          const fileName = task.inputPath.split(/[/\\]/).pop() || task.inputPath;
-          return {
-            ...task,
-            outputPath: `${outputDir}${fileName}${suffix}${ext}`,
-          };
-        })
+        prevTasks.map((task) => ({
+          ...task,
+          suffix,
+          extension: ext,
+        }))
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPreset, outputDir]);
+  }, [selectedPreset]);
 
-  // Update output paths when output directory changes
-  useEffect(() => {
-    if (tasks.length > 0) {
-      const { suffix, ext } = getPresetOutputInfo(selectedPreset);
-      setTasks((prevTasks) =>
-        prevTasks.map((task) => {
-          const fileName = task.inputPath.split(/[/\\]/).pop() || task.inputPath;
-          return {
-            ...task,
-            outputPath: `${outputDir}${fileName}${suffix}${ext}`,
-          };
-        })
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [outputDir]);
+  const handleRemoveTask = (id: string) => {
+    setSelectedFiles((prev) => prev.filter((path) => path !== id));
+    setMetadataList((prev) => {
+      const index = selectedFiles.indexOf(id);
+      return index >= 0 ? prev.filter((_, i) => i !== index) : prev;
+    });
+    setTasks((prev) => prev.filter((task) => task.id !== id));
+  };
 
-  const handleRemoveTask = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-    setMetadataList((prev) => prev.filter((_, i) => i !== index));
-    setTasks((prev) => prev.filter((_, i) => i !== index));
+  const handleUpdateFileName = (id: string, newFileName: string) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id ? { ...task, outputFileName: newFileName } : task
+      )
+    );
   };
 
   const handleStartBatchTranscode = async () => {
-    if (selectedFiles.length === 0 || !outputDir) return;
+    if (tasks.length === 0 || !outputDir) return;
 
     setError(null);
     setIsTranscoding(true);
@@ -441,10 +448,14 @@ function App() {
     );
 
     try {
+      // Generate full output paths for each task
+      const inputPaths = tasks.map((t) => t.inputPath);
+      const outputPaths = tasks.map((t) => getOutputPath(t, outputDir));
+
       const batchId = await invoke("start_batch_transcode", {
         request: {
-          input_paths: selectedFiles,
-          output_dir: outputDir,
+          input_paths: inputPaths,
+          output_paths: outputPaths,
           preset: selectedPreset,
         },
       });
@@ -577,15 +588,21 @@ function App() {
           <button
             className="start-button"
             onClick={handleStartBatchTranscode}
-            disabled={isTranscoding || !outputDir || selectedFiles.length === 0}
+            disabled={isTranscoding || !outputDir || tasks.length === 0}
           >
-            {isTranscoding ? "Transcoding..." : `Start Batch Transcode (${selectedFiles.length} files)`}
+            {isTranscoding ? "Transcoding..." : `Start Batch Transcode (${tasks.length} files)`}
           </button>
         </div>
       )}
 
       {/* Batch Queue Display */}
-      <BatchQueue tasks={tasks} onRemoveTask={handleRemoveTask} />
+      <BatchQueue
+        tasks={tasks}
+        outputDir={outputDir}
+        selectedPreset={selectedPreset}
+        onRemoveTask={handleRemoveTask}
+        onUpdateFileName={handleUpdateFileName}
+      />
 
       {/* Legacy Progress Display for single-file mode compatibility */}
       {progress && tasks.length === 0 && <ProgressDisplay progress={progress} />}
