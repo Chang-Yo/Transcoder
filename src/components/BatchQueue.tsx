@@ -1,4 +1,5 @@
 import type { FileTask, OutputPreset } from "../types";
+import { TimeRangeInput } from "./TimeRangeInput";
 
 interface BatchQueueProps {
   tasks: FileTask[];
@@ -6,6 +7,8 @@ interface BatchQueueProps {
   selectedPreset: OutputPreset;
   onRemoveTask: (id: string) => void;
   onUpdateFileName: (id: string, newFileName: string) => void;
+  onUpdateSegment?: (id: string, segment: import("../types").TimeSegment | null) => void;
+  taskDurations?: Map<string, number>;  // Map of task ID to duration in seconds
 }
 
 const statusIcons: Record<FileTask["status"], string> = {
@@ -28,6 +31,8 @@ export function BatchQueue({
   selectedPreset,
   onRemoveTask,
   onUpdateFileName,
+  onUpdateSegment,
+  taskDurations,
 }: BatchQueueProps) {
   if (tasks.length === 0) return null;
 
@@ -112,6 +117,16 @@ export function BatchQueue({
                   {currentExt} when transcoding starts
                 </div>
               )}
+
+            {/* Time range input for pending tasks */}
+            {task.status === "pending" && onUpdateSegment && taskDurations && (
+              <TimeRangeInput
+                duration={taskDurations.get(task.id) ?? 0}
+                segment={task.segment}
+                onChange={(segment) => onUpdateSegment(task.id, segment)}
+                disabled={task.status !== "pending"}
+              />
+            )}
 
             {task.status === "transcoding" && task.progress && (
               <div className="queue-item-progress">

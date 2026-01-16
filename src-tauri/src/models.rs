@@ -1,5 +1,49 @@
 use serde::{Deserialize, Serialize};
 
+/// Time segment for partial transcoding
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TimeSegment {
+    /// Start time in seconds
+    pub start_sec: f64,
+    /// End time in seconds, None means to the end of video
+    pub end_sec: Option<f64>,
+}
+
+impl TimeSegment {
+    /// Validate if segment is within video duration
+    pub fn is_valid(&self, duration_sec: f64) -> bool {
+        if self.start_sec < 0.0 {
+            return false;
+        }
+        if self.start_sec >= duration_sec {
+            return false;
+        }
+        if let Some(end) = self.end_sec {
+            if end <= self.start_sec {
+                return false;
+            }
+            // Allow end to exceed duration slightly (ffmpeg will handle it)
+            if end < self.start_sec {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Get segment duration in seconds
+    pub fn duration(&self, total_duration: f64) -> f64 {
+        let end = self.end_sec.unwrap_or(total_duration);
+        end.min(total_duration) - self.start_sec
+    }
+
+    /// Clamp segment to be within video duration
+    pub fn clamp(&self, duration_sec: f64) -> Self {
+        let start_sec = self.start_sec.clamp(0.0, duration_sec - 0.1);
+        let end_sec = self.end_sec.map(|end| end.clamp(start_sec + 0.1, duration_sec));
+        Self { start_sec, end_sec }
+    }
+}
+
 /// Media metadata extracted from ffprobe
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MediaMetadata {
@@ -48,6 +92,9 @@ pub struct TranscodeRequest {
     pub input_path: String,
     pub output_path: String,
     pub preset: OutputPreset,
+    /// Optional time segment - None means transcode the entire video
+    #[serde(rename = "segment")]
+    pub segment: Option<TimeSegment>,
 }
 
 /// Progress updates sent to frontend
@@ -77,6 +124,9 @@ pub struct BatchTranscodeRequest {
     pub input_paths: Vec<String>,
     pub output_paths: Vec<String>,  // Full output paths for each input file
     pub preset: OutputPreset,
+    /// Optional time segment for each input file
+    #[serde(rename = "segments")]
+    pub segments: Option<Vec<Option<TimeSegment>>>,
 }
 
 /// Batch progress with file index for tracking multiple files

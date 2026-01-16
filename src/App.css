@@ -845,3 +845,246 @@ a:hover {
     color: #aaa;
   }
 }
+
+/* Time range input component styles */
+.time-range-input {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.time-range-input.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.time-range-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.time-range-toggle input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.time-range-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.time-range-slider {
+  flex: 1;
+  position: relative;
+  height: 24px;
+}
+
+.slider-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: #ddd;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+
+.slider-fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  background-color: #396cd8;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+
+.slider-input {
+  position: absolute;
+  width: 12px;
+  height: 24px;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+.slider-input::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background-color: #396cd8;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.slider-input::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background-color: #396cd8;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.slider-input:disabled::-webkit-slider-thumb {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.slider-input:disabled::-moz-range-thumb {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.slider-input:focus {
+  outline: none;
+}
+
+.slider-input:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(57, 108, 216, 0.3);
+}
+
+.slider-input:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(57, 108, 216, 0.3);
+}
+
+.time-inputs {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.time-input {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.time-input label {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.time-input input {
+  width: 80px;
+  font-family: monospace;
+  text-align: center;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.time-input input:focus {
+  outline: none;
+  border-color: #396cd8;
+}
+
+.time-input input:disabled {
+  background-color: #f0f0f0;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.to-end-btn {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.9rem;
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-left: 0.2rem;
+}
+
+.to-end-btn:hover:not(:disabled) {
+  background-color: #d0d0d0;
+}
+
+.to-end-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.segment-duration {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.4rem;
+  text-align: center;
+}
+
+/* Dark mode for time range input */
+@media (prefers-color-scheme: dark) {
+  .time-range-input {
+    background-color: #2a2a2a;
+  }
+
+  .slider-track {
+    background-color: #444;
+  }
+
+  .slider-fill {
+    background-color: #396cd8;
+  }
+
+  .slider-input::-webkit-slider-thumb {
+    border-color: #2a2a2a;
+  }
+
+  .slider-input::-moz-range-thumb {
+    border-color: #2a2a2a;
+  }
+
+  .slider-input:disabled::-webkit-slider-thumb {
+    background-color: #666;
+  }
+
+  .slider-input:disabled::-moz-range-thumb {
+    background-color: #666;
+  }
+
+  .time-input label {
+    color: #aaa;
+  }
+
+  .time-input input {
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #ffffff;
+  }
+
+  .time-input input:focus {
+    border-color: #396cd8;
+  }
+
+  .time-input input:disabled {
+    background-color: #1a1a1a;
+    color: #888;
+  }
+
+  .to-end-btn {
+    background-color: #3a3a3a;
+    border-color: #555;
+    color: #fff;
+  }
+
+  .to-end-btn:hover:not(:disabled) {
+    background-color: #4a4a4a;
+  }
+
+  .segment-duration {
+    color: #aaa;
+  }
+}

@@ -15,7 +15,7 @@ import type {
   FileTask,
   BatchProgress,
 } from "./types";
-import { getOutputPath } from "./types";
+import { getOutputPath, getSegmentDuration } from "./types";
 
 // Supported video file extensions
 const VIDEO_EXTENSIONS = [
@@ -172,6 +172,7 @@ function App() {
   // Batch task tracking
   const [tasks, setTasks] = useState<FileTask[]>([]);
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
+  const [taskDurations, setTaskDurations] = useState<Map<string, number>>(new Map());
 
   // Debounce tracking for file drop to prevent race conditions
   const [lastDropTime, setLastDropTime] = useState<number>(0);
@@ -356,9 +357,23 @@ function App() {
           status: "pending",
           progress: null,
           originalFileName,
+          segment: null,
         });
       }
       return newTasks;
+    });
+
+    // Store durations for TimeRangeInput
+    setTaskDurations((prev) => {
+      const newDurations = new Map(prev);
+      for (let i = 0; i < paths.length; i++) {
+        const path = paths[i];
+        const meta = newMetadata[i];
+        if (meta) {
+          newDurations.set(path, meta.duration_sec);
+        }
+      }
+      return newDurations;
     });
   };
 
@@ -421,6 +436,11 @@ function App() {
       return index >= 0 ? prev.filter((_, i) => i !== index) : prev;
     });
     setTasks((prev) => prev.filter((task) => task.id !== id));
+    setTaskDurations((prev) => {
+      const newDurations = new Map(prev);
+      newDurations.delete(id);
+      return newDurations;
+    });
   };
 
   const handleUpdateFileName = (id: string, newFileName: string) => {
@@ -431,8 +451,32 @@ function App() {
     );
   };
 
+  const handleUpdateSegment = (id: string, segment: import("./types").TimeSegment | null) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id ? { ...task, segment } : task
+      )
+    );
+  };
+
   const handleStartBatchTranscode = async () => {
     if (tasks.length === 0 || !outputDir) return;
+
+    // Validate segments - ensure no invalid segments
+    for (const task of tasks) {
+      if (task.segment) {
+        const duration = taskDurations.get(task.id) ?? 0;
+        const seg = task.segment;
+        if (seg.start_sec >= duration) {
+          setError(`Invalid segment start time for ${task.originalFileName}`);
+          return;
+        }
+        if (seg.end_sec !== null && seg.end_sec <= seg.start_sec) {
+          setError(`Invalid segment end time for ${task.originalFileName}`);
+          return;
+        }
+      }
+    }
 
     setError(null);
     setIsTranscoding(true);
@@ -451,12 +495,14 @@ function App() {
       // Generate full output paths for each task
       const inputPaths = tasks.map((t) => t.inputPath);
       const outputPaths = tasks.map((t) => getOutputPath(t, outputDir));
+      const segments = tasks.map((t) => t.segment);
 
       const batchId = await invoke("start_batch_transcode", {
         request: {
           input_paths: inputPaths,
           output_paths: outputPaths,
           preset: selectedPreset,
+          segments: segments,
         },
       });
       setCurrentBatchId(batchId as string);
@@ -565,19 +611,25 @@ function App() {
           <div className="size-estimate">
             <span className="size-label">Total estimated size:</span>{" "}
             <span className="size-value">
-              {metadataList.length > 0
+              {tasks.length > 0
                 ? (() => {
-                    // Sum up all file sizes (using average of min/max for CRF)
-                    const totalMinMB = metadataList.reduce((acc, meta) => {
-                      if (!meta) return acc;
-                      const size = estimateOutputSize(meta, selectedPreset);
-                      return acc + size.minMB;
-                    }, 0);
-                    const totalMaxMB = metadataList.reduce((acc, meta) => {
-                      if (!meta) return acc;
-                      const size = estimateOutputSize(meta, selectedPreset);
-                      return acc + size.maxMB;
-                    }, 0);
+                    // Sum up all file sizes (using segment duration if set)
+                    let totalMinMB = 0;
+                    let totalMaxMB = 0;
+
+                    for (const task of tasks) {
+                      const metaIndex = selectedFiles.indexOf(task.id);
+                      const meta = metaIndex >= 0 ? metadataList[metaIndex] : null;
+                      if (!meta) continue;
+
+                      // Create a modified metadata object with segment duration
+                      const segmentDuration = getSegmentDuration(task.segment, meta.duration_sec);
+                      const adjustedMeta = { ...meta, duration_sec: segmentDuration };
+                      const size = estimateOutputSize(adjustedMeta, selectedPreset);
+                      totalMinMB += size.minMB;
+                      totalMaxMB += size.maxMB;
+                    }
+
                     return formatSizeRange(totalMinMB, totalMaxMB);
                   })()
                 : "Select video files"}
@@ -602,6 +654,8 @@ function App() {
         selectedPreset={selectedPreset}
         onRemoveTask={handleRemoveTask}
         onUpdateFileName={handleUpdateFileName}
+        onUpdateSegment={handleUpdateSegment}
+        taskDurations={taskDurations}
       />
 
       {/* Legacy Progress Display for single-file mode compatibility */}

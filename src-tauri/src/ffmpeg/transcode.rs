@@ -1,7 +1,7 @@
 use crate::error::TranscodeError;
 use crate::ffmpeg::ffprobe;
 use crate::ffmpeg::SpawnNoConsole;
-use crate::models::{BatchProgress, TranscodeProgress, TranscodeRequest};
+use crate::models::{BatchProgress, TimeSegment, TranscodeProgress, TranscodeRequest};
 use std::io::BufRead;
 use std::process::{Command, Stdio};
 use std::thread;
@@ -81,8 +81,10 @@ fn execute_transcode(
         .block_on(ffprobe::extract_metadata(&request.input_path))
         .map_err(|e| TranscodeError::MediaInfoFailed(e.to_string()))?;
 
-    // Build ffmpeg command from preset
-    let args = request.preset.build_ffmpeg_args(&metadata, &request.output_path);
+    // Build ffmpeg command from preset (with segment support)
+    let args = request
+        .preset
+        .build_ffmpeg_args(&metadata, &request.output_path, request.segment.as_ref());
 
     // Spawn ffmpeg with stderr piped for progress parsing (no console window)
     let mut child = Command::new("ffmpeg")
@@ -101,7 +103,7 @@ fn execute_transcode(
     for line in reader.lines() {
         let line = line.map_err(|e| TranscodeError::TranscodeFailed(e.to_string()))?;
 
-        if let Some(progress) = parse_ffmpeg_progress(&line, &metadata) {
+        if let Some(progress) = parse_ffmpeg_progress(&line, &metadata, request.segment.as_ref()) {
             emit_progress(window, mode, progress);
         }
     }
@@ -146,6 +148,7 @@ fn emit_progress(window: &Window, mode: &ProgressMode, progress: TranscodeProgre
 fn parse_ffmpeg_progress(
     line: &str,
     metadata: &crate::models::MediaMetadata,
+    segment: Option<&TimeSegment>,
 ) -> Option<TranscodeProgress> {
     if !line.contains("frame=") {
         return None;
@@ -155,10 +158,22 @@ fn parse_ffmpeg_progress(
     let fps = extract_value(line, "fps=").and_then(|s| s.parse().ok());
     let bitrate = extract_value(line, "bitrate=").map(|s| s.to_string());
 
-    // Calculate progress percentage based on time vs duration
+    // Calculate progress percentage based on segment duration
     let elapsed_seconds = parse_time_string(&time_str)?;
-    let progress = if metadata.duration_sec > 0.0 {
-        (elapsed_seconds / metadata.duration_sec) * 100.0
+
+    // Determine effective duration for progress calculation
+    let (segment_start, effective_duration) = if let Some(seg) = segment {
+        let end = seg.end_sec.unwrap_or(metadata.duration_sec);
+        (seg.start_sec, end - seg.start_sec)
+    } else {
+        (0.0, metadata.duration_sec)
+    };
+
+    // Adjust elapsed time relative to segment start
+    let effective_elapsed = elapsed_seconds - segment_start;
+
+    let progress = if effective_duration > 0.0 {
+        ((effective_elapsed / effective_duration) * 100.0).max(0.0)
     } else {
         0.0
     };

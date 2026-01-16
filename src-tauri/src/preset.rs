@@ -1,19 +1,41 @@
-use crate::models::{MediaMetadata, OutputPreset};
+use crate::models::{MediaMetadata, OutputPreset, TimeSegment};
 
 impl OutputPreset {
     /// Generate ffmpeg command arguments for this preset
-    pub fn build_ffmpeg_args(&self, metadata: &MediaMetadata, output: &str) -> Vec<String> {
-        let mut args = vec![
+    pub fn build_ffmpeg_args(
+        &self,
+        metadata: &MediaMetadata,
+        output: &str,
+        segment: Option<&TimeSegment>,
+    ) -> Vec<String> {
+        let mut args = Vec::new();
+
+        // IMPORTANT: -ss must come BEFORE -i for fast seeking (keyframe seeking)
+        // This is much faster than seeking after the input
+        if let Some(seg) = segment {
+            args.push("-ss".to_string());
+            args.push(format_time_as_ffmpeg(seg.start_sec));
+        }
+
+        args.extend(vec![
             "-i".to_string(), // Input
             metadata.file_path.clone(),
             "-c:v".to_string(), // Video codec
             self.video_codec(),
-        ];
+        ]);
 
         // Add preset-specific video parameters
         args.extend(self.preset_args());
 
-        // Audio: Always convert to PCM 16-bit
+        // Add end time parameter if specified
+        if let Some(seg) = segment {
+            if let Some(end) = seg.end_sec {
+                args.push("-to".to_string());
+                args.push(format_time_as_ffmpeg(end));
+            }
+        }
+
+        // Audio handling
         args.extend(self.audio_args());
 
         // Format / container specific flags
@@ -107,4 +129,13 @@ rc-lookahead=40:weightp=2"
             _ => vec!["-c:a".to_string(), "pcm_s16le".to_string()],
         }
     }
+}
+
+/// Convert seconds to HH:MM:SS.mmm format for ffmpeg
+/// e.g., 3661.5 -> "01:01:01.500"
+pub fn format_time_as_ffmpeg(seconds: f64) -> String {
+    let hours = (seconds / 3600.0).floor() as u32;
+    let minutes = ((seconds % 3600.0) / 60.0).floor() as u32;
+    let secs = seconds % 60.0;
+    format!("{:02}:{:02}:{:06.3}", hours, minutes, secs)
 }

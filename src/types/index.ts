@@ -17,12 +17,18 @@ export interface MediaMetadata {
   };
 }
 
+export interface TimeSegment {
+  start_sec: number;  // Start time in seconds
+  end_sec: number | null;  // End time in seconds, null means end of video
+}
+
 export type OutputPreset = "ProRes422" | "ProRes422LT" | "ProRes422Proxy" | "DnxHRHQX" | "H264Crf18";
 
 export interface TranscodeRequest {
   input_path: string;
   output_path: string;
   preset: OutputPreset;
+  segment?: TimeSegment;  // Optional
 }
 
 export interface TranscodeProgress {
@@ -45,6 +51,7 @@ export interface BatchTranscodeRequest {
   input_paths: string[];
   output_paths: string[];  // Full output paths for each input file
   preset: OutputPreset;
+  segments?: (TimeSegment | null)[];  // Optional segments for each file
 }
 
 export interface BatchProgress {
@@ -65,9 +72,59 @@ export interface FileTask {
   status: FileTaskStatus;
   progress: TranscodeProgress | null;
   originalFileName: string; // Original input file name for display
+  segment: TimeSegment | null;  // null means full video
 }
 
 // Helper to get the full output path from a FileTask
 export function getOutputPath(task: FileTask, outputDir: string): string {
   return `${outputDir}${task.outputFileName}${task.suffix}${task.extension}`;
+}
+
+// Time formatting helpers for segments
+
+/** Convert seconds to HH:MM:SS format */
+export function secondsToTimecode(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+/** Parse HH:MM:SS timecode to seconds */
+export function timecodeToSeconds(timecode: string): number | null {
+  const parts = timecode.split(':');
+  if (parts.length !== 3) return null;
+
+  const hours = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1], 10);
+  const seconds = parseInt(parts[2], 10);
+
+  if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) return null;
+  if (minutes < 0 || minutes >= 60 || seconds < 0 || seconds >= 60) return null;
+
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+/** Format segment as filename suffix (e.g., "_0105-0230") */
+export function formatSegmentSuffix(segment: TimeSegment | null): string {
+  if (!segment) return "";
+
+  const formatTime = (sec: number) => {
+    const mins = Math.floor(sec / 60);
+    const secs = Math.floor(sec % 60);
+    return `${mins.toString().padStart(2, '0')}${secs.toString().padStart(2, '0')}`;
+  };
+
+  const start = formatTime(segment.start_sec);
+  const end = segment.end_sec !== null
+    ? formatTime(segment.end_sec)
+    : "end";
+  return `_${start}-${end}`;
+}
+
+/** Calculate segment duration in seconds */
+export function getSegmentDuration(segment: TimeSegment | null, totalDuration: number): number {
+  if (!segment) return totalDuration;
+  const end = segment.end_sec ?? totalDuration;
+  return Math.max(0, Math.min(end, totalDuration) - segment.start_sec);
 }

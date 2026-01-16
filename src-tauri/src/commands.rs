@@ -86,10 +86,16 @@ pub async fn start_batch_transcode(
         let batch_id_clone = batch_id.clone();
         let window_clone = window.clone();
 
+        // Get the segment for this file (if any)
+        let segment = request.segments.as_ref()
+            .and_then(|segments| segments.get(index)
+            .and_then(|s| s.as_ref().cloned()));
+
         let transcode_request = TranscodeRequest {
             input_path: input_path.clone(),
             output_path: output_path.clone(),
             preset: request.preset,
+            segment,
         };
 
         // Spawn each file in its own thread
