@@ -15,7 +15,10 @@ import type {
   FileTask,
   BatchProgress,
 } from "./types";
-import { getOutputPath, getSegmentDuration } from "./types";
+import { getOutputPath, getSegmentDuration, getPresetOutputInfo } from "./types";
+
+// Constants
+const FILE_DROP_DEBOUNCE_MS = 500; // Debounce time for file drop events
 
 // Supported video file extensions
 const VIDEO_EXTENSIONS = [
@@ -82,22 +85,6 @@ const PRESET_INFO = {
     bitrateMbps: 25, // at 1080p (variable bitrate, CRF-based)
   },
 } as const;
-
-// Get output file suffix and extension for a preset
-function getPresetOutputInfo(preset: OutputPreset): { suffix: string; ext: ".mov" | ".mp4" } {
-  switch (preset) {
-    case "ProRes422LT":
-      return { suffix: "_proreslt", ext: ".mov" };
-    case "DnxHRHQX":
-      return { suffix: "_dnxhr", ext: ".mov" };
-    case "ProRes422Proxy":
-      return { suffix: "_proxy", ext: ".mov" };
-    case "H264Crf18":
-      return { suffix: "_h264", ext: ".mp4" };
-    default:
-      return { suffix: "_prores", ext: ".mov" };
-  }
-}
 
 // Calculate estimated output file size (returns size in MB, or range for CRF)
 function estimateOutputSize(
@@ -382,9 +369,9 @@ function App() {
     const unlisten = listen<string[]>("tauri://file-drop", async (event) => {
       if (isTranscoding) return;
 
-      // Debounce: only process one drop per 500ms to prevent race conditions
+      // Debounce: only process one drop per FILE_DROP_DEBOUNCE_MS to prevent race conditions
       const now = Date.now();
-      if (now - lastDropTime < 500) {
+      if (now - lastDropTime < FILE_DROP_DEBOUNCE_MS) {
         return;
       }
       setLastDropTime(now);

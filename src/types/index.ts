@@ -24,6 +24,22 @@ export interface TimeSegment {
 
 export type OutputPreset = "ProRes422" | "ProRes422LT" | "ProRes422Proxy" | "DnxHRHQX" | "H264Crf18";
 
+/** Get output file suffix and extension for a preset */
+export function getPresetOutputInfo(preset: OutputPreset): { suffix: string; ext: ".mov" | ".mp4" } {
+  switch (preset) {
+    case "ProRes422LT":
+      return { suffix: "_proreslt", ext: ".mov" };
+    case "DnxHRHQX":
+      return { suffix: "_dnxhr", ext: ".mov" };
+    case "ProRes422Proxy":
+      return { suffix: "_proxy", ext: ".mov" };
+    case "H264Crf18":
+      return { suffix: "_h264", ext: ".mp4" };
+    default:
+      return { suffix: "_prores", ext: ".mov" };
+  }
+}
+
 export interface TranscodeRequest {
   input_path: string;
   output_path: string;

@@ -8,7 +8,8 @@
       "Bash(npm run tauri build:*)",
       "Bash(powershell:*)",
       "Bash(npm run check:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

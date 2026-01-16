@@ -1,4 +1,5 @@
 import type { FileTask, OutputPreset } from "../types";
+import { getPresetOutputInfo } from "../types";
 import { TimeRangeInput } from "./TimeRangeInput";
 
 interface BatchQueueProps {
@@ -42,23 +43,7 @@ export function BatchQueue({
   const overallProgress =
     totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
-  // Get suffix and extension for the current preset
-  function getPresetInfo(preset: OutputPreset): { suffix: string; ext: string } {
-    switch (preset) {
-      case "ProRes422LT":
-        return { suffix: "_proreslt", ext: ".mov" };
-      case "DnxHRHQX":
-        return { suffix: "_dnxhr", ext: ".mov" };
-      case "ProRes422Proxy":
-        return { suffix: "_proxy", ext: ".mov" };
-      case "H264Crf18":
-        return { suffix: "_h264", ext: ".mp4" };
-      default:
-        return { suffix: "_prores", ext: ".mov" };
-    }
-  }
-
-  const { suffix: currentSuffix, ext: currentExt } = getPresetInfo(selectedPreset);
+  const { suffix: currentSuffix, ext: currentExt } = getPresetOutputInfo(selectedPreset);
 
   return (
     <div className="batch-queue">

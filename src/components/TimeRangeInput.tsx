@@ -1,5 +1,11 @@
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { TimeSegment } from "../types";
 import { secondsToTimecode, timecodeToSeconds, getSegmentDuration } from "../types";
+
+// Constants for time range behavior
+const DEFAULT_SEGMENT_DURATION = 30; // Default segment length in seconds when enabled
+const MIN_SEGMENT_GAP = 1; // Minimum seconds between start and end
+const THUMB_BUFFER_PERCENT = 4; // Buffer percent for slider thumb visibility
 
 interface TimeRangeInputProps {
   duration: number;  // Total video duration in seconds
@@ -11,51 +17,119 @@ interface TimeRangeInputProps {
 export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRangeInputProps) {
   const isEnabled = segment !== null;
 
+  // Local state for time inputs to prevent premature updates during editing
+  const [startTimeInput, setStartTimeInput] = useState("");
+  const [endTimeInput, setEndTimeInput] = useState("");
+
+  // Track which input is focused
+  const startInputRef = useRef<HTMLInputElement>(null);
+  const endInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync local state when segment changes externally
+  useEffect(() => {
+    if (isEnabled) {
+      setStartTimeInput(secondsToTimecode(segment.start_sec));
+      setEndTimeInput(
+        segment.end_sec !== null ? secondsToTimecode(segment.end_sec) : "End"
+      );
+    } else {
+      setStartTimeInput("");
+      setEndTimeInput("");
+    }
+  }, [isEnabled, segment]);
+
   const handleToggle = (checked: boolean) => {
     if (checked) {
-      // Enable with default segment (first 30 seconds or full duration if shorter)
+      // Enable with default segment (first N seconds or full duration if shorter)
       onChange({
         start_sec: 0,
-        end_sec: Math.min(30, duration),
+        end_sec: Math.min(DEFAULT_SEGMENT_DURATION, duration),
       });
     } else {
       onChange(null);
     }
   };
 
-  const handleSliderChange = (values: [number, number]) => {
+  const handleSliderChange = useCallback((values: [number, number]) => {
     if (!isEnabled) return;
     const [start, end] = values;
-    onChange({
+    const newSegment = {
       start_sec: start,
       end_sec: end < duration ? end : null,
-    });
-  };
+    };
+    onChange(newSegment);
+    // Update local input states
+    setStartTimeInput(secondsToTimecode(start));
+    setEndTimeInput(end < duration ? secondsToTimecode(end) : "End");
+  }, [duration, isEnabled, onChange]);
 
   const handleStartTimeChange = (timecode: string) => {
-    if (!isEnabled) return;
-    const seconds = timecodeToSeconds(timecode);
-    if (seconds === null || seconds < 0 || seconds >= duration) return;
+    setStartTimeInput(timecode);
+  };
+
+  const handleStartTimeBlur = () => {
+    const seconds = timecodeToSeconds(startTimeInput);
+    if (seconds === null || seconds < 0 || seconds >= duration) {
+      // Revert to current segment value
+      setStartTimeInput(secondsToTimecode(segment!.start_sec));
+      return;
+    }
 
     const endSec = segment!.end_sec;
-    if (endSec !== null && seconds >= endSec) return;
+    if (endSec !== null && seconds >= endSec) {
+      setStartTimeInput(secondsToTimecode(segment!.start_sec));
+      return;
+    }
 
     onChange({ ...segment!, start_sec: seconds });
   };
 
+  const handleStartTimeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleStartTimeBlur();
+      startInputRef.current?.blur();
+    }
+  };
+
   const handleEndTimeChange = (timecode: string) => {
-    if (!isEnabled) return;
-    const seconds = timecodeToSeconds(timecode);
-    if (seconds === null || seconds < 0) return;
+    setEndTimeInput(timecode);
+  };
+
+  const handleEndTimeBlur = () => {
+    if (endTimeInput.toLowerCase() === "end") {
+      onChange({ ...segment!, end_sec: null });
+      return;
+    }
+
+    const seconds = timecodeToSeconds(endTimeInput);
+    if (seconds === null || seconds < 0) {
+      // Revert to current segment value
+      setEndTimeInput(
+        segment!.end_sec !== null ? secondsToTimecode(segment!.end_sec) : "End"
+      );
+      return;
+    }
 
     const startSec = segment!.start_sec;
-    if (seconds <= startSec) return;
+    if (seconds <= startSec) {
+      setEndTimeInput(
+        segment!.end_sec !== null ? secondsToTimecode(segment!.end_sec) : "End"
+      );
+      return;
+    }
 
     // If input exceeds duration, set to null (end of video)
     onChange({
       ...segment!,
       end_sec: seconds >= duration ? null : seconds,
     });
+  };
+
+  const handleEndTimeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleEndTimeBlur();
+      endInputRef.current?.blur();
+    }
   };
 
   const handleEndToVideoEnd = () => {
@@ -66,6 +140,11 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
   // Slider values (0-100 scale for visual representation)
   const startPercent = isEnabled ? (segment.start_sec / duration) * 100 : 0;
   const endPercent = isEnabled ? ((segment.end_sec ?? duration) / duration) * 100 : 100;
+
+  // Clip paths to make each slider only receive events on its thumb area
+  // This prevents the sliders from interfering with each other
+  const startClipPath = `inset(0 0 0 ${Math.max(0, startPercent - THUMB_BUFFER_PERCENT)}%)`;
+  const endClipPath = `inset(0 ${Math.max(0, 100 - endPercent - THUMB_BUFFER_PERCENT)}% 0 0)`;
 
   // Segment duration for display
   const segmentDuration = isEnabled ? getSegmentDuration(segment, duration) : duration;
@@ -99,34 +178,34 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
                 type="range"
                 min={0}
                 max={duration}
-                step={1}
+                step={0.1}
                 value={segment.start_sec}
                 onChange={(e) => {
                   const newStart = parseFloat(e.target.value);
                   const currentEnd = segment.end_sec ?? duration;
-                  if (newStart < currentEnd - 1) {
+                  if (newStart < currentEnd - MIN_SEGMENT_GAP) {
                     handleSliderChange([newStart, currentEnd]);
                   }
                 }}
                 disabled={disabled}
                 className="slider-input slider-start"
-                style={{ left: `${startPercent}%` }}
+                style={{ clipPath: startClipPath, WebkitClipPath: startClipPath }}
               />
               <input
                 type="range"
                 min={0}
                 max={duration}
-                step={1}
+                step={0.1}
                 value={segment.end_sec ?? duration}
                 onChange={(e) => {
                   const newEnd = parseFloat(e.target.value);
-                  if (newEnd > segment.start_sec + 1) {
+                  if (newEnd > segment.start_sec + MIN_SEGMENT_GAP) {
                     handleSliderChange([segment.start_sec, newEnd]);
                   }
                 }}
                 disabled={disabled}
                 className="slider-input slider-end"
-                style={{ left: `${endPercent}%` }}
+                style={{ clipPath: endClipPath, WebkitClipPath: endClipPath }}
               />
             </div>
           </div>
@@ -135,9 +214,12 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
             <div className="time-input">
               <label>Start:</label>
               <input
+                ref={startInputRef}
                 type="text"
-                value={secondsToTimecode(segment.start_sec)}
+                value={startTimeInput}
                 onChange={(e) => handleStartTimeChange(e.target.value)}
+                onBlur={handleStartTimeBlur}
+                onKeyDown={handleStartTimeKeyDown}
                 disabled={disabled}
                 placeholder="00:00:00"
                 maxLength={8}
@@ -146,15 +228,19 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
             <div className="time-input">
               <label>End:</label>
               <input
+                ref={endInputRef}
                 type="text"
-                value={segment.end_sec !== null ? secondsToTimecode(segment.end_sec) : "End"}
+                value={endTimeInput}
                 onChange={(e) => handleEndTimeChange(e.target.value)}
+                onBlur={handleEndTimeBlur}
+                onKeyDown={handleEndTimeKeyDown}
                 disabled={disabled}
-                placeholder="00:00:00"
+                placeholder="00:00:00 or End"
                 maxLength={8}
               />
               {segment.end_sec !== null && segment.end_sec < duration && (
                 <button
+                  type="button"
                   className="to-end-btn"
                   onClick={handleEndToVideoEnd}
                   disabled={disabled}
