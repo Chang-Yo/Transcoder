@@ -1,0 +1,277 @@
+.file-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: var(--border-radius, 8px);
+  transition: all var(--transition-fast, 150ms ease);
+  animation: cardSlideIn 250ms ease;
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.file-card:hover {
+  border-color: var(--border-hover, #ccc);
+  box-shadow: var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.05));
+}
+
+.file-card.status-transcoding {
+  border-color: var(--primary, #396cd8);
+  background-color: var(--primary-bg-light, #f0f4ff);
+}
+
+.file-card.status-completed {
+  border-color: var(--success, #28a745);
+  background-color: var(--success-bg-light, #e8f5e9);
+}
+
+.file-card.status-failed {
+  border-color: var(--error, #dc3545);
+  background-color: var(--error-bg-light, #fce8e8);
+}
+
+.file-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.file-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.file-card-status-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.file-card-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #0f0f0f);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-card-size {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #666);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.file-card-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+  flex-wrap: wrap;
+}
+
+.file-card-segment {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: var(--bg-secondary, #f0f0f0);
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.file-card-preset {
+  color: var(--primary, #396cd8);
+  font-weight: 500;
+}
+
+.file-card-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.file-card-progress-bar {
+  flex: 1;
+  height: 4px;
+  background-color: var(--bg-secondary, #e0e0e0);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.file-card-progress-fill {
+  height: 100%;
+  background-color: var(--primary, #396cd8);
+  transition: width 0.3s ease;
+  animation: progressPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.file-card-progress-fill.completed {
+  background-color: var(--success, #28a745);
+  animation: none;
+}
+
+.file-card-progress-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #666);
+  font-weight: 500;
+  min-width: 32px;
+  text-align: right;
+}
+
+.file-card-error {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--error, #dc3545);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.file-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.file-card-action-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: var(--bg-secondary, #f0f0f0);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all var(--transition-fast, 150ms ease);
+  padding: 0;
+  box-shadow: none;
+}
+
+.file-card-action-btn:hover:not(:disabled) {
+  background-color: var(--bg-hover, #e0e0e0);
+}
+
+.file-card-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.file-card-edit:hover:not(:disabled) {
+  background-color: var(--primary-bg, #e8f4ff);
+  color: var(--primary, #396cd8);
+}
+
+.file-card-remove:hover:not(:disabled) {
+  background-color: var(--error-bg-light, #fce8e8);
+  color: var(--error, #dc3545);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .file-card {
+    background-color: var(--surface, #2a2a2a);
+    border-color: var(--border, #444);
+  }
+
+  .file-card:hover {
+    border-color: var(--border-hover, #555);
+  }
+
+  .file-card.status-transcoding {
+    background-color: var(--primary-bg-light, #1a2840);
+    border-color: var(--primary, #396cd8);
+  }
+
+  .file-card.status-completed {
+    background-color: var(--success-bg-light, #1a3a20);
+    border-color: var(--success, #28a745);
+  }
+
+  .file-card.status-failed {
+    background-color: var(--error-bg-light, #3a1a1a);
+    border-color: var(--error, #dc3545);
+  }
+
+  .file-card-name {
+    color: var(--text-primary, #f6f6f6);
+  }
+
+  .file-card-size,
+  .file-card-info,
+  .file-card-progress-text {
+    color: var(--text-secondary, #aaa);
+  }
+
+  .file-card-segment {
+    background-color: var(--bg-secondary, #3a3a3a);
+  }
+
+  .file-card-preset {
+    color: var(--primary, #5a9eff);
+  }
+
+  .file-card-progress-bar {
+    background-color: var(--bg-secondary, #3a3a3a);
+  }
+
+  .file-card-progress-fill {
+    background-color: var(--primary, #396cd8);
+  }
+
+  .file-card-progress-fill.completed {
+    background-color: var(--success, #28a745);
+  }
+
+  .file-card-action-btn {
+    background-color: var(--bg-secondary, #3a3a3a);
+    color: var(--text-primary, #f6f6f6);
+  }
+
+  .file-card-action-btn:hover:not(:disabled) {
+    background-color: var(--bg-hover, #4a4a4a);
+  }
+
+  .file-card-edit:hover:not(:disabled) {
+    background-color: var(--primary-bg, #1a2840);
+    color: var(--primary, #5a9eff);
+  }
+
+  .file-card-remove:hover:not(:disabled) {
+    background-color: var(--error-bg-light, #3a1a1a);
+    color: var(--error, #ff6b6b);
+  }
+}

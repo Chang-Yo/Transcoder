@@ -1,3 +1,5 @@
+import "./ErrorMessage.css";
+
 interface ErrorMessageProps {
   message: string;
   onDismiss?: () => void;
@@ -5,13 +7,20 @@ interface ErrorMessageProps {
 
 export function ErrorMessage({ message, onDismiss }: ErrorMessageProps) {
   return (
-    <div className="error-message">
-      <p>{message}</p>
-      {onDismiss && (
-        <button onClick={onDismiss} className="error-dismiss">
-          Dismiss
-        </button>
-      )}
+    <div className="error-toast">
+      <div className="error-toast-content">
+        <span className="error-toast-icon">⚠</span>
+        <p className="error-toast-message">{message}</p>
+        {onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="error-toast-dismiss"
+            aria-label="Dismiss error"
+          >
+            ×
+          </button>
+        )}
+      </div>
     </div>
   );
 }

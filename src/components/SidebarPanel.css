@@ -1,0 +1,265 @@
+.sidebar-panel {
+  width: var(--sidebar-width, 280px);
+  min-width: var(--sidebar-width, 280px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg, 1.5rem);
+  padding: var(--spacing-lg, 1.5rem) var(--spacing-md, 1rem);
+  background-color: var(--surface, #ffffff);
+  border-right: 1px solid var(--border, #e0e0e0);
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-section-spacer {
+  margin-top: auto;
+}
+
+.sidebar-section-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sidebar-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #0f0f0f);
+}
+
+.sidebar-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: var(--border-radius, 6px);
+  font-size: 0.875rem;
+  font-family: inherit;
+  background-color: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #0f0f0f);
+  transition: border-color var(--transition-fast, 150ms ease),
+    box-shadow var(--transition-fast, 150ms ease);
+}
+
+.sidebar-input:focus {
+  outline: none;
+  border-color: var(--primary, #396cd8);
+  box-shadow: 0 0 0 3px rgba(57, 108, 216, 0.15);
+}
+
+.sidebar-input:disabled {
+  background-color: var(--bg-disabled, #f0f0f0);
+  color: var(--text-disabled, #888);
+  cursor: not-allowed;
+}
+
+.sidebar-input::placeholder {
+  color: var(--text-muted, #aaa);
+}
+
+.sidebar-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--border-radius, 6px);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast, 150ms ease),
+    opacity var(--transition-fast, 150ms ease);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-button-primary {
+  background-color: var(--primary, #396cd8);
+  color: #ffffff;
+}
+
+.sidebar-button-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover, #2a5bb8);
+}
+
+.sidebar-button-primary:disabled {
+  background-color: var(--bg-disabled, #ccc);
+  cursor: not-allowed;
+}
+
+.sidebar-button-secondary {
+  background-color: var(--bg-secondary, #f0f0f0);
+  color: var(--text-primary, #0f0f0f);
+}
+
+.sidebar-button-secondary:hover:not(:disabled) {
+  background-color: var(--bg-hover, #e0e0e0);
+}
+
+.sidebar-estimate {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background-color: var(--bg-secondary, #f6f6f6);
+  border-radius: var(--border-radius, 6px);
+}
+
+.sidebar-estimate-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+}
+
+.sidebar-estimate-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary, #396cd8);
+}
+
+.sidebar-file-count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--bg-secondary, #f6f6f6);
+  border-radius: var(--border-radius, 6px);
+}
+
+.sidebar-file-count-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary, #396cd8);
+}
+
+.sidebar-file-count-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+}
+
+/* Compact preset grid for sidebar */
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.preset-card-compact {
+  position: relative;
+  cursor: pointer;
+}
+
+.preset-card-compact input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.preset-card-compact-content {
+  display: block;
+  padding: 0.625rem 0.5rem;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 6px;
+  background-color: var(--bg-primary, #fafafa);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+  transition: all var(--transition-fast, 150ms ease);
+  color: var(--text-primary, #0f0f0f);
+}
+
+.preset-card-compact:hover .preset-card-compact-content {
+  border-color: var(--primary, #396cd8);
+  background-color: var(--bg-hover, #f0f4ff);
+}
+
+.preset-card-compact.selected .preset-card-compact-content {
+  border-color: var(--primary, #396cd8);
+  background-color: var(--primary-bg, #e8f4ff);
+  color: var(--primary, #396cd8);
+}
+
+.preset-card-compact input[type="radio"]:disabled + .preset-card-compact-content {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.preset-card-compact-name {
+  font-weight: 500;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .sidebar-panel {
+    background-color: var(--surface, #1a1a1a);
+    border-color: var(--border, #444);
+  }
+
+  .sidebar-section-title {
+    color: var(--text-secondary, #aaa);
+  }
+
+  .sidebar-label {
+    color: var(--text-primary, #f6f6f6);
+  }
+
+  .sidebar-input {
+    background-color: var(--bg-primary, #2a2a2a);
+    border-color: var(--border, #444);
+    color: var(--text-primary, #ffffff);
+  }
+
+  .sidebar-input:focus {
+    border-color: var(--primary, #396cd8);
+  }
+
+  .sidebar-input:disabled {
+    background-color: var(--bg-disabled, #1a1a1a);
+  }
+
+  .sidebar-button-secondary {
+    background-color: var(--bg-secondary, #2a2a2a);
+    color: var(--text-primary, #f6f6f6);
+  }
+
+  .sidebar-button-secondary:hover:not(:disabled) {
+    background-color: var(--bg-hover, #3a3a3a);
+  }
+
+  .sidebar-estimate,
+  .sidebar-file-count {
+    background-color: var(--bg-secondary, #2a2a2a);
+  }
+
+  .sidebar-estimate-label,
+  .sidebar-file-count-label {
+    color: var(--text-secondary, #aaa);
+  }
+
+  .sidebar-estimate-value,
+  .sidebar-file-count-number {
+    color: var(--primary, #5a9eff);
+  }
+
+  .preset-card-compact-content {
+    background-color: var(--bg-primary, #2a2a2a);
+    border-color: var(--border, #444);
+    color: var(--text-primary, #f6f6f6);
+  }
+
+  .preset-card-compact:hover .preset-card-compact-content {
+    border-color: var(--primary, #396cd8);
+    background-color: var(--bg-hover, #1a2840);
+  }
+
+  .preset-card-compact.selected .preset-card-compact-content {
+    border-color: var(--primary, #396cd8);
+    background-color: var(--primary-bg, #1a2840);
+    color: var(--primary, #5a9eff);
+  }
+}

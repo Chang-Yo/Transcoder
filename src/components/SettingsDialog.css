@@ -1,0 +1,134 @@
+.settings-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #0f0f0f);
+}
+
+.settings-input,
+.settings-select {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background-color: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #0f0f0f);
+  transition: border-color var(--transition-fast, 150ms ease),
+    box-shadow var(--transition-fast, 150ms ease);
+}
+
+.settings-input:focus,
+.settings-select:focus {
+  outline: none;
+  border-color: var(--primary, #396cd8);
+  box-shadow: 0 0 0 3px rgba(57, 108, 216, 0.15);
+}
+
+.settings-input::placeholder {
+  color: var(--text-muted, #aaa);
+}
+
+.settings-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-primary, #0f0f0f);
+  cursor: pointer;
+  user-select: none;
+}
+
+.settings-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.settings-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.settings-btn-primary,
+.settings-btn-secondary {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast, 150ms ease);
+}
+
+.settings-btn-primary {
+  background-color: var(--primary, #396cd8);
+  color: #ffffff;
+}
+
+.settings-btn-primary:hover {
+  background-color: var(--primary-hover, #2a5bb8);
+}
+
+.settings-btn-secondary {
+  background-color: var(--bg-secondary, #f0f0f0);
+  color: var(--text-primary, #0f0f0f);
+}
+
+.settings-btn-secondary:hover {
+  background-color: var(--bg-hover, #e0e0e0);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .settings-label {
+    color: var(--text-primary, #f6f6f6);
+  }
+
+  .settings-input,
+  .settings-select {
+    background-color: var(--bg-primary, #2a2a2a);
+    border-color: var(--border, #444);
+    color: var(--text-primary, #ffffff);
+  }
+
+  .settings-input:focus,
+  .settings-select:focus {
+    border-color: var(--primary, #396cd8);
+  }
+
+  .settings-input::placeholder {
+    color: var(--text-muted, #666);
+  }
+
+  .settings-checkbox {
+    color: var(--text-primary, #f6f6f6);
+  }
+
+  .settings-hint {
+    color: var(--text-muted, #888);
+  }
+
+  .settings-btn-secondary {
+    background-color: var(--bg-secondary, #2a2a2a);
+    color: var(--text-primary, #f6f6f6);
+  }
+
+  .settings-btn-secondary:hover {
+    background-color: var(--bg-hover, #3a3a3a);
+  }
+}

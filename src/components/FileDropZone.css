@@ -1,0 +1,67 @@
+.file-drop-zone {
+  border: 2px dashed var(--border, #ccc);
+  border-radius: var(--border-radius, 12px);
+  padding: 2rem;
+  background-color: var(--bg-secondary, #fafafa);
+  transition: all var(--transition-normal, 250ms ease);
+  cursor: pointer;
+}
+
+.file-drop-zone:hover:not(.file-drop-zone-disabled) {
+  border-color: var(--primary, #396cd8);
+  background-color: var(--primary-bg-light, #f0f4ff);
+}
+
+.file-drop-zone-dragging {
+  border-color: var(--primary, #396cd8);
+  background-color: var(--primary-bg, #e8f4ff);
+  transform: scale(1.01);
+}
+
+.file-drop-zone-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.file-drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 120px;
+}
+
+.file-drop-zone-icon {
+  font-size: 3rem;
+  opacity: 0.6;
+}
+
+.file-drop-zone-text {
+  font-size: 1rem;
+  color: var(--text-secondary, #666);
+  margin: 0;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .file-drop-zone {
+    border-color: var(--border, #444);
+    background-color: var(--bg-secondary, #2a2a2a);
+  }
+
+  .file-drop-zone:hover:not(.file-drop-zone-disabled) {
+    border-color: var(--primary, #396cd8);
+    background-color: var(--primary-bg-light, #1a2840);
+  }
+
+  .file-drop-zone-dragging {
+    border-color: var(--primary, #396cd8);
+    background-color: var(--primary-bg, #1a2840);
+  }
+
+  .file-drop-zone-text {
+    color: var(--text-secondary, #aaa);
+  }
+}

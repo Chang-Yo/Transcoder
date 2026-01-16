@@ -144,3 +144,29 @@ export function getSegmentDuration(segment: TimeSegment | null, totalDuration: n
   const end = segment.end_sec ?? totalDuration;
   return Math.max(0, Math.min(end, totalDuration) - segment.start_sec);
 }
+
+// Preset display names
+export const PRESET_DISPLAY_NAMES: Record<OutputPreset, string> = {
+  ProRes422: "ProRes 422",
+  ProRes422LT: "ProRes 422 LT",
+  ProRes422Proxy: "ProRes 422 Proxy",
+  DnxHRHQX: "DNxHR HQX",
+  H264Crf18: "H.264 CRF 18",
+};
+
+// App Settings interface
+export interface AppSettings {
+  defaultPreset: OutputPreset;
+  defaultOutputDir: string;
+  rememberOutputDir: boolean;
+  defaultSegmentLength: number;
+}
+
+// Dropdown item interface
+export interface DropdownItem {
+  label?: string;
+  onClick?: () => void;
+  icon?: string;
+  disabled?: boolean;
+  divider?: boolean;
+}

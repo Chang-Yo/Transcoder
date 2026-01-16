@@ -27,10 +27,11 @@ This is an **Editing Transcoder** - a desktop application built with **Tauri + R
 ### Frontend Responsibilities (TypeScript)
 - File selection via drag-and-drop or file picker
 - Preset selection UI (card-based radio buttons)
-- Output file size estimation (based on metadata)
+- Output file size estimation (based on metadata, accounting for segment duration if set)
 - Display transcoding progress
 - Display error messages
 - **Custom output filename editing** - Users can edit output filenames (suffix/extension remain read-only, controlled by preset)
+- **Video segment/trim UI** - TimeRangeInput component with dual-handle slider and timecode input (HH:MM:SS format)
 - Generate complete output paths for backend (no path generation on backend side)
 
 ---
@@ -81,6 +82,7 @@ Estimation is displayed after selecting a file and updates when switching preset
 - **v0.4**: Batch queue, parallel transcoding, progress tracking ✅
 - **v0.5**: Low-size Proxy preset with AAC audio ✅
 - **v0.6**: Custom output filename editing, H.264 CRF 18 preset, code cleanup ✅
+- **v0.7**: Video segment/trim transcoding with dual-handle slider and timecode input ✅
 
 ---
 
