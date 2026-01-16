@@ -48,6 +48,8 @@ Call this skill when:
 6. **Update the Docs
    - changelog
    - readme
+   
+   You should never add the Claude's cowork name in the commit message.
 7. **Commit changes**
    ```bash
    git add .
