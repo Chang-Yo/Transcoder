@@ -31,7 +31,7 @@ export function Footer() {
           ))}
         </div>
         <p className="footer-copyright">
-          Released under the MIT License. Built with Tauri + Rust + TypeScript.
+          Released under the Apache License 2.0. Built with Tauri + Rust + TypeScript.
         </p>
       </div>
 
