@@ -46,52 +46,12 @@ export function FileCard({
     setLocalPreset(task.preset ?? null);
   }, [task]);
 
-  const getScrollableAncestor = (el: HTMLElement | null) => {
-    let current: HTMLElement | null = el;
-    while (current && current !== document.body) {
-      const style = window.getComputedStyle(current);
-      const overflowY = style.overflowY;
-      const isScrollable = (overflowY === "auto" || overflowY === "scroll") &&
-        current.scrollHeight > current.clientHeight;
-      if (isScrollable) return current;
-      current = current.parentElement;
-    }
-    return null;
-  };
-
   const ensureCardVisible = () => {
     const cardEl = cardRef.current;
     if (!cardEl) return;
 
-    const scrollParent = getScrollableAncestor(cardEl) ||
-      (cardEl.closest(".file-queue-list") as HTMLElement | null);
-    if (!scrollParent) {
-      cardEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-
-    const cardRect = cardEl.getBoundingClientRect();
-    const containerRect = scrollParent.getBoundingClientRect();
-    const padding = 8;
-
-    if (cardRect.height > containerRect.height) {
-      scrollParent.scrollBy({
-        top: cardRect.top - containerRect.top - padding,
-        behavior: "smooth",
-      });
-      return;
-    }
-
-    const overBottom = cardRect.bottom - containerRect.bottom;
-    if (overBottom > 0) {
-      scrollParent.scrollBy({ top: overBottom + padding, behavior: "smooth" });
-      return;
-    }
-
-    const overTop = containerRect.top - cardRect.top;
-    if (overTop > 0) {
-      scrollParent.scrollBy({ top: -overTop - padding, behavior: "smooth" });
-    }
+    // Simple approach: scroll card into view
+    cardEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
   // Ensure expanded card content is fully visible without manual scrolling

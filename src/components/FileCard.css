@@ -7,6 +7,7 @@
   transition: all var(--transition-fast, 150ms ease);
   animation: fadeSlideIn 250ms ease;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .file-card:hover {
