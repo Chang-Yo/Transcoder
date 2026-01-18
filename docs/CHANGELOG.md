@@ -5,7 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.8.0] - IN PROGRESS
+## [0.5.0] - 2025-01-19
+
+### Added
+- File folder emoji icon (📁) in empty drag-drop zone
+- Slider hint text "(drag handles to adjust)" next to Enable time range checkbox
+
+### Changed
+- Time range slider handles — now pure black circles (24px) for better visibility
+- Time range visual design — gray track (total duration) + blue fill (selected range)
+- FileCard — removed per-file preset display (now managed globally in sidebar)
+- Enhanced file size display — larger font and bolder weight
+- Input fields — added shadows for better visual hierarchy
+- Metadata items — added shadows for better visual hierarchy
+
+### Fixed
+- Slider thumb visibility — handles now clearly visible against any background
+- Empty drag-drop zone now shows visual indicator instead of blank space
+
+## [0.4.0] - 2025-01-18
+
+### Changed
+- Renamed from "IN PROGRESS" to release version 0.4.0
+
+## [0.3.1] - IN PROGRESS
 
 ### Added
 - **Left-right split layout** — sidebar with controls, main area with file queue

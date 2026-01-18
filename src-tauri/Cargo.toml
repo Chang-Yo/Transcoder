@@ -1,9 +1,12 @@
 [package]
 name = "transcoder"
-version = "0.2.1"
-description = "A Tauri App"
-authors = ["you"]
+version = "0.5.0"
+description = "Editing Transcoder - Video conversion tool for editing"
+authors = ["Chang-Yo"]
 edition = "2021"
+
+[package.metadata.license]
+expression = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
