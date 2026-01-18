@@ -24,6 +24,15 @@ export interface TimeSegment {
 
 export type OutputPreset = "ProRes422" | "ProRes422LT" | "ProRes422Proxy" | "DnxHRHQX" | "H264Crf18";
 
+// Preset bitrate information for size estimation
+export const PRESET_BITRATE: Record<OutputPreset, number> = {
+  ProRes422: 147,      // Mbps at 1080p
+  ProRes422LT: 102,
+  ProRes422Proxy: 36,
+  DnxHRHQX: 295,
+  H264Crf18: 25,       // Variable bitrate, CRF-based
+};
+
 /** Get output file suffix and extension for a preset */
 export function getPresetOutputInfo(preset: OutputPreset): { suffix: string; ext: ".mov" | ".mp4" } {
   switch (preset) {
@@ -79,6 +88,14 @@ export interface BatchProgress {
 
 export type FileTaskStatus = "pending" | "transcoding" | "completed" | "failed";
 
+// Status display labels for FileTask status
+export const FILE_TASK_STATUS_LABELS: Record<FileTaskStatus, string> = {
+  pending: "Pending",
+  transcoding: "Processing",
+  completed: "Done",
+  failed: "Failed",
+};
+
 export interface FileTask {
   id: string;              // Unique identifier (inputPath serves as ID)
   inputPath: string;       // Full input file path
@@ -89,6 +106,7 @@ export interface FileTask {
   progress: TranscodeProgress | null;
   originalFileName: string; // Original input file name for display
   segment: TimeSegment | null;  // null means full video
+  preset?: OutputPreset;  // undefined = use global preset, set = custom preset for this file
 }
 
 // Helper to get the full output path from a FileTask
@@ -162,11 +180,74 @@ export interface AppSettings {
   defaultSegmentLength: number;
 }
 
-// Dropdown item interface
-export interface DropdownItem {
-  label?: string;
-  onClick?: () => void;
-  icon?: string;
-  disabled?: boolean;
-  divider?: boolean;
+// Size estimation helpers
+
+// Constants for size estimation calculations
+export const BASELINE_WIDTH = 1920;
+export const BASELINE_HEIGHT = 1080;
+export const BASELINE_PIXELS = BASELINE_WIDTH * BASELINE_HEIGHT;
+export const BITS_PER_BYTE = 8;
+export const BYTES_PER_MB = 1024 ** 2;
+
+// H.264 size estimation constants (MB per minute at 1080p)
+export const H264_MIN_SIZE_MB_PER_MIN = 15;
+export const H264_MAX_SIZE_MB_PER_MIN = 45;
+
+/** Calculate estimated output file size */
+export function estimateOutputSize(
+  metadata: MediaMetadata,
+  preset: OutputPreset
+): { minMB: number; maxMB: number } {
+  if (preset === "H264Crf18") {
+    const pixels = metadata.video.width * metadata.video.height;
+    const resolutionFactor = pixels / BASELINE_PIXELS;
+    const minSizePerMin = H264_MIN_SIZE_MB_PER_MIN * resolutionFactor;
+    const maxSizePerMin = H264_MAX_SIZE_MB_PER_MIN * resolutionFactor;
+    const durationMin = metadata.duration_sec / 60;
+    return {
+      minMB: minSizePerMin * durationMin,
+      maxMB: maxSizePerMin * durationMin,
+    };
+  }
+
+  const baseBitrate = PRESET_BITRATE[preset] * 1_000_000;
+  const pixels = metadata.video.width * metadata.video.height;
+  const resolutionFactor = pixels / BASELINE_PIXELS;
+  const adjustedBitrate = baseBitrate * resolutionFactor;
+  const totalBits = adjustedBitrate * metadata.duration_sec;
+  const totalMB = totalBits / BITS_PER_BYTE / BYTES_PER_MB;
+
+  return { minMB: totalMB, maxMB: totalMB };
+}
+
+/** Calculate estimated output size range for a task */
+export function getEstimatedSizeRange(
+  task: FileTask,
+  metadata: MediaMetadata | null,
+  preset: OutputPreset
+): { minMB: number; maxMB: number } | null {
+  if (!metadata) return null;
+  const segmentDuration = getSegmentDuration(task.segment, metadata.duration_sec);
+  const adjustedMeta = { ...metadata, duration_sec: segmentDuration };
+  return estimateOutputSize(adjustedMeta, preset);
+}
+
+/** Format size for display */
+export function formatSize(sizeMB: number): string {
+  if (sizeMB >= 1024) {
+    return `~${(sizeMB / 1024).toFixed(1)} GB`;
+  }
+  return `~${sizeMB.toFixed(0)} MB`;
+}
+
+/** Format size range for display */
+export function formatSizeRange(minMB: number, maxMB: number): string {
+  if (minMB === maxMB) {
+    return formatSize(minMB);
+  }
+  const maxGB = maxMB / 1024;
+  if (maxGB >= 1) {
+    return `~${(minMB / 1024).toFixed(1)}-${maxGB.toFixed(1)} GB`;
+  }
+  return `~${minMB.toFixed(0)}-${maxMB.toFixed(0)} MB`;
 }

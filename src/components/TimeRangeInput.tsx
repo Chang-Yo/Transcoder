@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { TimeSegment } from "../types";
 import { secondsToTimecode, timecodeToSeconds, getSegmentDuration } from "../types";
+import "./TimeRangeInput.css";
 
 // Constants for time range behavior
 const DEFAULT_SEGMENT_DURATION = 30; // Default segment length in seconds when enabled
@@ -12,6 +13,77 @@ interface TimeRangeInputProps {
   segment: TimeSegment | null;
   onChange: (segment: TimeSegment | null) => void;
   disabled?: boolean;
+}
+
+// Validation result for timecode input
+interface ValidationResult {
+  isValid: boolean;
+  seconds: number | null;
+}
+
+/**
+ * Validate a timecode input for start time
+ * Returns valid seconds or null if invalid
+ */
+function validateStartTimeInput(
+  timecode: string,
+  currentSegment: TimeSegment,
+  duration: number
+): ValidationResult {
+  const seconds = timecodeToSeconds(timecode);
+
+  // Invalid timecode format
+  if (seconds === null) {
+    return { isValid: false, seconds: null };
+  }
+
+  // Out of bounds
+  if (seconds < 0 || seconds >= duration) {
+    return { isValid: false, seconds: null };
+  }
+
+  // Must be before end time
+  const endSec = currentSegment.end_sec;
+  if (endSec !== null && seconds >= endSec) {
+    return { isValid: false, seconds: null };
+  }
+
+  return { isValid: true, seconds };
+}
+
+/**
+ * Validate a timecode input for end time
+ * Returns valid seconds, null (for "End"), or null if invalid
+ */
+function validateEndTimeInput(
+  timecode: string,
+  currentSegment: TimeSegment,
+  duration: number
+): ValidationResult {
+  // Special case: "end" means end of video
+  if (timecode.toLowerCase() === "end") {
+    return { isValid: true, seconds: null };
+  }
+
+  const seconds = timecodeToSeconds(timecode);
+
+  // Invalid timecode format
+  if (seconds === null || seconds < 0) {
+    return { isValid: false, seconds: null };
+  }
+
+  // Must be after start time
+  const startSec = currentSegment.start_sec;
+  if (seconds <= startSec) {
+    return { isValid: false, seconds: null };
+  }
+
+  // If exceeds duration, treat as "end of video"
+  if (seconds >= duration) {
+    return { isValid: true, seconds: null };
+  }
+
+  return { isValid: true, seconds };
 }
 
 export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRangeInputProps) {
@@ -68,20 +140,15 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
   };
 
   const handleStartTimeBlur = () => {
-    const seconds = timecodeToSeconds(startTimeInput);
-    if (seconds === null || seconds < 0 || seconds >= duration) {
+    if (!segment) return;
+    const result = validateStartTimeInput(startTimeInput, segment, duration);
+    if (!result.isValid) {
       // Revert to current segment value
-      setStartTimeInput(secondsToTimecode(segment!.start_sec));
+      setStartTimeInput(secondsToTimecode(segment.start_sec));
       return;
     }
 
-    const endSec = segment!.end_sec;
-    if (endSec !== null && seconds >= endSec) {
-      setStartTimeInput(secondsToTimecode(segment!.start_sec));
-      return;
-    }
-
-    onChange({ ...segment!, start_sec: seconds });
+    onChange({ ...segment, start_sec: result.seconds! });
   };
 
   const handleStartTimeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -96,33 +163,17 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
   };
 
   const handleEndTimeBlur = () => {
-    if (endTimeInput.toLowerCase() === "end") {
-      onChange({ ...segment!, end_sec: null });
-      return;
-    }
-
-    const seconds = timecodeToSeconds(endTimeInput);
-    if (seconds === null || seconds < 0) {
+    if (!segment) return;
+    const result = validateEndTimeInput(endTimeInput, segment, duration);
+    if (!result.isValid) {
       // Revert to current segment value
       setEndTimeInput(
-        segment!.end_sec !== null ? secondsToTimecode(segment!.end_sec) : "End"
+        segment.end_sec !== null ? secondsToTimecode(segment.end_sec) : "End"
       );
       return;
     }
 
-    const startSec = segment!.start_sec;
-    if (seconds <= startSec) {
-      setEndTimeInput(
-        segment!.end_sec !== null ? secondsToTimecode(segment!.end_sec) : "End"
-      );
-      return;
-    }
-
-    // If input exceeds duration, set to null (end of video)
-    onChange({
-      ...segment!,
-      end_sec: seconds >= duration ? null : seconds,
-    });
+    onChange({ ...segment, end_sec: result.seconds });
   };
 
   const handleEndTimeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -133,13 +184,13 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
   };
 
   const handleEndToVideoEnd = () => {
-    if (!isEnabled) return;
-    onChange({ ...segment!, end_sec: null });
+    if (!isEnabled || !segment) return;
+    onChange({ ...segment, end_sec: null });
   };
 
   // Slider values (0-100 scale for visual representation)
-  const startPercent = isEnabled ? (segment.start_sec / duration) * 100 : 0;
-  const endPercent = isEnabled ? ((segment.end_sec ?? duration) / duration) * 100 : 100;
+  const startPercent = isEnabled && segment ? (segment.start_sec / duration) * 100 : 0;
+  const endPercent = isEnabled && segment ? ((segment.end_sec ?? duration) / duration) * 100 : 100;
 
   // Clip paths to make each slider only receive events on its thumb area
   // This prevents the sliders from interfering with each other
@@ -147,7 +198,7 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
   const endClipPath = `inset(0 ${Math.max(0, 100 - endPercent - THUMB_BUFFER_PERCENT)}% 0 0)`;
 
   // Segment duration for display
-  const segmentDuration = isEnabled ? getSegmentDuration(segment, duration) : duration;
+  const segmentDuration = isEnabled && segment ? getSegmentDuration(segment, duration) : duration;
   const durationDisplay = secondsToTimecode(segmentDuration);
 
   return (
@@ -159,7 +210,7 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
           onChange={(e) => handleToggle(e.target.checked)}
           disabled={disabled}
         />
-        <span>Trim video segment</span>
+        <span>Enable time range</span>
       </label>
 
       {isEnabled && (
@@ -253,7 +304,7 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
           </div>
 
           <div className="segment-duration">
-            Segment length: {durationDisplay}
+            Time range length: {durationDisplay}
           </div>
         </>
       )}

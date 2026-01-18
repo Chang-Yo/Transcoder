@@ -16,7 +16,7 @@ This is an **Editing Transcoder** - a desktop application built with **Tauri + R
 - **Frontend**: TypeScript + Web UI (Tauri)
 - **Backend**: Rust (Tauri Commands)
 - **Media Processing**: System-level `ffmpeg` and `ffprobe`
-
+- **Development Platform**: Windows 10/11, **Powershell**, so always remember use the right command for powershell
 ### Backend Responsibilities (Rust)
 - Validate ffmpeg/ffprobe availability
 - Call ffprobe to extract media metadata (resolution, framerate, bit depth, chroma subsampling, audio codec)
@@ -25,20 +25,23 @@ This is an **Editing Transcoder** - a desktop application built with **Tauri + R
 - Handle exceptions and errors
 
 ### Frontend Responsibilities (TypeScript)
-- File selection via drag-and-drop or file picker
-- Preset selection UI (card-based radio buttons)
-- Output file size estimation (based on metadata, accounting for segment duration if set)
-- Display transcoding progress
-- Display error messages
-- **Custom output filename editing** - Users can edit output filenames (suffix/extension remain read-only, controlled by preset)
-- **Video segment/trim UI** - TimeRangeInput component with dual-handle slider and timecode input (HH:MM:SS format)
-- Generate complete output paths for backend (no path generation on backend side)
+- **Layout**: Left-right split layout with sidebar for global controls, main area for file queue
+- **Components**: Modular React components with dedicated CSS files
+- **State Management**: React hooks (useState, useEffect, useMemo) + custom hooks
+- **File Selection**: Drag-and-drop zone and file picker dialogs
+- **Preset Selection**: Compact preset grid in sidebar
+- **Output File Size Estimation**: Based on metadata and segment duration
+- **Progress Display**: StatusBar component showing overall batch progress
+- **Error Handling**: Toast-style error messages
+- **Custom Modal System**: Modal component with ESC/close-on-overlay
+- **Settings Persistence**: localStorage-based settings (default preset, output directory, etc.)
+- **Keyboard Shortcuts**: Ctrl+O (add files), Ctrl+, (settings), Ctrl+Enter (start), Escape (close dialogs)
 
 ---
 
 ## Output Presets
 
-The tool supports five video output presets (user-selectable via card-based UI):
+The tool supports five video output presets (user-selectable via sidebar grid):
 
 1. **ProRes 422** (recommended) - Main editing format, intra-frame compression, 10-bit, 4:2:2 (~147 Mbps at 1080p)
 2. **ProRes 422 LT** - For disk-space constrained scenarios (~102 Mbps at 1080p)
@@ -53,7 +56,7 @@ The frontend automatically estimates the output file size based on:
 - Resolution (scaled from 1080p baseline)
 - Selected preset bitrate
 
-Estimation is displayed after selecting a file and updates when switching presets.
+Estimation is displayed in the sidebar and updates when switching presets.
 
 ### Audio Output Strategy (Automatic)
 - **Regular presets** (ProRes 422, ProRes 422 LT, DNxHR HQX): All input audio → **PCM 16-bit (uncompressed)**
@@ -63,14 +66,54 @@ Estimation is displayed after selecting a file and updates when switching preset
 
 ---
 
+## UI Layout Structure (v0.8+)
+
+The application uses a left-right split layout:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Header: [Editing Transcoder]          [Settings ⚙] [File Menu 📁 ▼]     │
+├────────────────────────┬────────────────────────────────────────────────┤
+│  Sidebar (280px)      │  Main Content Area                              │
+│  ┌──────────────────┐ │  ┌──────────────────────────────────────────┐  │
+│  │ Output Format    │ │  │ Queue ────────────── 5 files            │  │
+│  │ [ProRes][LT][Pr] │ │  │ ┌─────────────────────────────────────┐  │  │
+│  │ [DNxHR][H.264]   │ │  │ │ ⏳ video1.mp4     150 MB    [✏ ⋮]  │  │  │
+│  │ Output Dir:      │ │  │ │ 0:00 - 0:30 · ProRes 422           │  │  │
+│  │ [______________] │ │  │ └─────────────────────────────────────┘  │  │
+│  │ Est.: ~1.7 GB    │ │  │ ┌─────────────────────────────────────┐  │  │
+│  │ [+ Add Files]    │ │  │ │ ⏳ video2.mp4     450 MB    [✏ ⋮]  │  │  │
+│  │ [Start (5)]      │ │  │ └─────────────────────────────────────┘  │  │
+│  └──────────────────┘ │  │ ...                                     │  │
+├────────────────────────┴────────────────────────────────────────────┤
+│  StatusBar: Overall 0/5 completed [███████░░░░] Est. time: 5:32      │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Component Architecture
+
+| Component        | Location                        | Props                                                  | Responsibility                        |
+| ---------------- | ------------------------------- | ------------------------------------------------------ | ------------------------------------- |
+| `SidebarPanel`   | `components/SidebarPanel.tsx`   | preset, outputDir, estimatedSize, fileCount, callbacks | Global controls for format and output |
+| `FileCard`       | `components/FileCard.tsx`       | task, metadata, preset, estimatedSize, callbacks       | Single file display in queue          |
+| `FileQueue`      | `components/FileQueue.tsx`      | tasks[], metadataList[], callbacks                     | Container for FileCard list           |
+| `FileDropZone`   | `components/FileDropZone.tsx`   | onFilesDrop, disabled                                  | Drag-and-drop area for empty state    |
+| `StatusBar`      | `components/StatusBar.tsx`      | completedCount, totalCount, failedCount, estimatedTime | Bottom progress bar                   |
+| `Modal`          | `components/ui/Modal.tsx`       | isOpen, onClose, title, children, footer               | Generic modal dialog                  |
+| `Dropdown`       | `components/ui/Dropdown.tsx`    | trigger, items[], align                                | Dropdown menu component               |
+| `SettingsDialog` | `components/SettingsDialog.tsx` | isOpen, onClose, settings, callbacks                   | Settings modal with form              |
+| `EditFileDialog` | `components/EditFileDialog.tsx` | isOpen, onClose, task, metadata, callbacks             | Per-file editing modal                |
+
+---
+
 ## Smart Rules (Implicit - Not Exposed to User)
 
-| Input Condition | Output Behavior |
-|----------------|-----------------|
-| 10-bit video | Preserve 10-bit output |
-| Any framerate | Preserve exactly (no conversion) |
-| FLAC/Opus audio | Auto-convert to PCM |
-| 8-bit video | Keep 8-bit (not upscale) |
+| Input Condition | Output Behavior                  |
+| --------------- | -------------------------------- |
+| 10-bit video    | Preserve 10-bit output           |
+| Any framerate   | Preserve exactly (no conversion) |
+| FLAC/Opus audio | Auto-convert to PCM              |
+| 8-bit video     | Keep 8-bit (not upscale)         |
 
 ---
 
@@ -83,6 +126,7 @@ Estimation is displayed after selecting a file and updates when switching preset
 - **v0.5**: Low-size Proxy preset with AAC audio ✅
 - **v0.6**: Custom output filename editing, H.264 CRF 18 preset, code cleanup ✅
 - **v0.7**: Video segment/trim transcoding with dual-handle slider and timecode input ✅
+- **v0.8**: UI refactoring to left-right split layout (IN PROGRESS - see docs/UI_REFACTORING.md) ⚠️
 
 ---
 
@@ -94,6 +138,8 @@ When working on this codebase:
 - Extract duplicated logic into shared utility functions
 - Keep frontend-backend type definitions in sync (check `types/index.ts` vs `models.rs`)
 - Avoid unused variables - prefix with underscore if intentionally unused
+- Each component has its own CSS file (e.g., `ComponentName.tsx` → `ComponentName.css`)
+- CSS variables defined in `index.css` for consistent theming
 
 ---
 

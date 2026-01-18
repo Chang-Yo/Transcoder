@@ -1,5 +1,6 @@
 import type { OutputPreset } from "../types";
-import { PRESET_INFO } from "../presetInfo";
+import { PRESET_INFO, PRESET_PARAMETERS } from "../presetInfo";
+import { pluralize } from "../utils/text";
 import "./SidebarPanel.css";
 
 export interface SidebarPanelProps {
@@ -13,6 +14,8 @@ export interface SidebarPanelProps {
   onStartTranscode: () => void;
   isTranscoding: boolean;
   canStart: boolean;
+  completedCount: number;
+  onClearCompleted?: () => void;
 }
 
 export function SidebarPanel({
@@ -26,7 +29,11 @@ export function SidebarPanel({
   onStartTranscode,
   isTranscoding,
   canStart,
+  completedCount,
+  onClearCompleted,
 }: SidebarPanelProps) {
+  const params = PRESET_PARAMETERS[selectedPreset];
+
   return (
     <aside className="sidebar-panel">
       {/* Preset Selection */}
@@ -53,6 +60,33 @@ export function SidebarPanel({
               </span>
             </label>
           ))}
+        </div>
+      </section>
+
+      {/* Preset Details */}
+      <section className="sidebar-section">
+        <h3 className="sidebar-section-title">Preset Details</h3>
+        <div className="preset-info">
+          <div className="preset-info-row">
+            <span className="preset-info-label">Codec</span>
+            <span className="preset-info-value">{params.codec}</span>
+          </div>
+          <div className="preset-info-row">
+            <span className="preset-info-label">Audio</span>
+            <span className="preset-info-value">{params.audio}</span>
+          </div>
+          <div className="preset-info-row">
+            <span className="preset-info-label">Color</span>
+            <span className="preset-info-value">{params.colorDepth}</span>
+          </div>
+          <div className="preset-info-row">
+            <span className="preset-info-label">Chroma</span>
+            <span className="preset-info-value">{params.chroma}</span>
+          </div>
+          <div className="preset-info-row">
+            <span className="preset-info-label">Bitrate</span>
+            <span className="preset-info-value">{params.bitrate}</span>
+          </div>
         </div>
       </section>
 
@@ -96,6 +130,15 @@ export function SidebarPanel({
         >
           {isTranscoding ? "Transcoding..." : `Start (${fileCount})`}
         </button>
+        {completedCount > 0 && (
+          <button
+            className="sidebar-button sidebar-button-tertiary"
+            onClick={onClearCompleted}
+            disabled={isTranscoding}
+          >
+            Clear Completed ({completedCount})
+          </button>
+        )}
       </section>
 
       {/* File Count Indicator */}
@@ -103,7 +146,7 @@ export function SidebarPanel({
         <div className="sidebar-file-count">
           <span className="sidebar-file-count-number">{fileCount}</span>
           <span className="sidebar-file-count-label">
-            {fileCount === 1 ? "file" : "files"} in queue
+            {pluralize(fileCount, "file")} in queue
           </span>
         </div>
       </section>

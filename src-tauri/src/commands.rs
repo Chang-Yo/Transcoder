@@ -84,6 +84,7 @@ pub async fn start_batch_transcode(
         let file_index = index;
         let total = total_files;
         let batch_id_clone = batch_id.clone();
+        // Window is internally reference-counted; cloning is cheap here.
         let window_clone = window.clone();
 
         // Get the segment for this file (if any)

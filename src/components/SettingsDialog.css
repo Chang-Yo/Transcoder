@@ -8,6 +8,13 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-subtle, #f0f0f0);
+}
+
+.settings-section:last-child {
+  border-bottom: none;
 }
 
 .settings-label {
@@ -95,6 +102,10 @@
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
+  .settings-section {
+    border-bottom-color: var(--border-subtle, #333);
+  }
+
   .settings-label {
     color: var(--text-primary, #f6f6f6);
   }

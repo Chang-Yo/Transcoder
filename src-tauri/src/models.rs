@@ -23,9 +23,6 @@ impl TimeSegment {
                 return false;
             }
             // Allow end to exceed duration slightly (ffmpeg will handle it)
-            if end < self.start_sec {
-                return false;
-            }
         }
         true
     }

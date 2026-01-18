@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { readDir } from "@tauri-apps/api/fs";
@@ -13,19 +13,24 @@ import { FileQueue } from "./components/FileQueue";
 import { FileDropZone } from "./components/FileDropZone";
 import { StatusBar } from "./components/StatusBar";
 import { SettingsDialog } from "./components/SettingsDialog";
-import { EditFileDialog } from "./components/EditFileDialog";
 import { ErrorMessage } from "./components/ErrorMessage";
-import { Dropdown, type DropdownItem } from "./components/ui/Dropdown";
 import type {
   OutputPreset,
   MediaMetadata,
   FileTask,
   BatchProgress,
-  TimeSegment,
   AppSettings,
 } from "./types";
-import { getOutputPath, getPresetOutputInfo } from "./types";
-import { PRESET_INFO } from "./presetInfo";
+import {
+  getOutputPath,
+  getPresetOutputInfo,
+  formatSizeRange,
+  getEstimatedSizeRange,
+} from "./types";
+import { ERROR_MESSAGES } from "./constants/messages";
+import { TAURI_EVENTS } from "./constants/events";
+import { logger } from "./utils/logger";
+import { pluralize } from "./utils/text";
 
 // Constants
 const FILE_DROP_DEBOUNCE_MS = 500;
@@ -62,65 +67,9 @@ async function readVideoFilesFromFolder(folderPath: string): Promise<string[]> {
       .map(entry => entry.path);
     return videoFiles;
   } catch (error) {
-    console.error("Failed to read folder:", error);
+    logger.error("Failed to read folder:", error);
     return [];
   }
-}
-
-// Calculate estimated output file size
-function estimateOutputSize(
-  metadata: MediaMetadata | null,
-  preset: OutputPreset
-): { minMB: number; maxMB: number } {
-  if (!metadata) return { minMB: 0, maxMB: 0 };
-
-  if (preset === "H264Crf18") {
-    const pixels = metadata.video.width * metadata.video.height;
-    const baselinePixels = 1920 * 1080;
-    const resolutionFactor = pixels / baselinePixels;
-
-    const minSizePerMin = 15 * resolutionFactor;
-    const maxSizePerMin = 45 * resolutionFactor;
-
-    const durationMin = metadata.duration_sec / 60;
-    return {
-      minMB: minSizePerMin * durationMin,
-      maxMB: maxSizePerMin * durationMin,
-    };
-  }
-
-  const presetInfo = PRESET_INFO[preset];
-  const baseBitrate = presetInfo.bitrateMbps * 1_000_000;
-
-  const pixels = metadata.video.width * metadata.video.height;
-  const baselinePixels = 1920 * 1080;
-  const resolutionFactor = pixels / baselinePixels;
-
-  const adjustedBitrate = baseBitrate * resolutionFactor;
-  const totalBits = adjustedBitrate * metadata.duration_sec;
-  const totalMB = totalBits / 8 / (1024 ** 2);
-
-  return { minMB: totalMB, maxMB: totalMB };
-}
-
-// Format size for display
-function formatSize(sizeMB: number): string {
-  if (sizeMB >= 1024) {
-    return `~${(sizeMB / 1024).toFixed(1)} GB`;
-  }
-  return `~${sizeMB.toFixed(0)} MB`;
-}
-
-// Format size range for display
-function formatSizeRange(minMB: number, maxMB: number): string {
-  if (minMB === maxMB) {
-    return formatSize(minMB);
-  }
-  const maxGB = maxMB / 1024;
-  if (maxGB >= 1) {
-    return `~${(minMB / 1024).toFixed(1)}-${maxGB.toFixed(1)} GB`;
-  }
-  return `~${minMB.toFixed(0)}-${maxMB.toFixed(0)} MB`;
 }
 
 // Default settings
@@ -131,14 +80,18 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultSegmentLength: 30,
 };
 
+// Helper to get effective preset for a task (local or global)
+function getEffectivePreset(task: FileTask, globalPreset: OutputPreset): OutputPreset {
+  return task.preset ?? globalPreset;
+}
+
 function App() {
   // UI State
   const settingsModal = useModal();
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   // File and task state
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [_selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [metadataList, setMetadataList] = useState<(MediaMetadata | null)[]>([]);
   const [outputDir, setOutputDir] = useState<string>("");
   const [selectedPreset, setSelectedPreset] = useState<OutputPreset>(DEFAULT_SETTINGS.defaultPreset);
@@ -149,6 +102,9 @@ function App() {
   const [tasks, setTasks] = useState<FileTask[]>([]);
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [taskDurations, setTaskDurations] = useState<Map<string, number>>(new Map());
+
+  // Expanded card state
+  const [expandedCardIds, setExpandedCardIds] = useState<Set<string>>(new Set());
 
   // Debounce tracking for file drop
   const [lastDropTime, setLastDropTime] = useState<number>(0);
@@ -167,7 +123,7 @@ function App() {
           setOutputDir(parsed.defaultOutputDir);
         }
       } catch (e) {
-        console.error("Failed to parse saved settings:", e);
+        logger.error("Failed to parse saved settings:", e);
       }
     }
   }, []);
@@ -180,13 +136,13 @@ function App() {
   // Show notification if using bundled FFmpeg
   useEffect(() => {
     if (ffmpegSource === "filesystem") {
-      console.log("Using bundled FFmpeg from ffmpeg/ folder");
+      logger.info("Using bundled FFmpeg from ffmpeg/ folder");
     }
   }, [ffmpegSource]);
 
   // Listen for batch progress updates
   useEffect(() => {
-    const unlisten = listen<BatchProgress>("batch-transcode-progress", (event) => {
+    const unlisten = listen<BatchProgress>(TAURI_EVENTS.BATCH_PROGRESS, (event) => {
       const { batch_id, file_index, progress: progressData } = event.payload;
 
       if (currentBatchId && batch_id === currentBatchId) {
@@ -210,7 +166,7 @@ function App() {
 
   // Listen for batch completion
   useEffect(() => {
-    const unlistenComplete = listen("batch-transcode-complete", (event) => {
+    const unlistenComplete = listen(TAURI_EVENTS.BATCH_COMPLETE, (event) => {
       const [batch_id, file_index] = event.payload as [string, number];
 
       if (currentBatchId && batch_id === currentBatchId) {
@@ -242,7 +198,7 @@ function App() {
       }
     });
 
-    const unlistenError = listen("batch-transcode-error", (event) => {
+    const unlistenError = listen(TAURI_EVENTS.BATCH_ERROR, (event) => {
       const [batch_id, file_index] = event.payload as [string, number];
 
       if (currentBatchId && batch_id === currentBatchId) {
@@ -265,36 +221,62 @@ function App() {
     };
   }, [currentBatchId]);
 
-  // Legacy listeners for single-file mode (kept for compatibility)
-  useEffect(() => {
-    const unlistenComplete = listen("transcode-complete", () => {
-      setIsTranscoding(false);
-    });
-
-    const unlistenError = listen("transcode-error", () => {
-      setIsTranscoding(false);
-      setError("Transcoding failed. Check that ffmpeg is installed and the input file is valid.");
-    });
-
-    return () => {
-      unlistenComplete.then((fn) => fn());
-      unlistenError.then((fn) => fn());
-    };
+  // Handle global preset change - only update tasks without custom presets
+  const handleGlobalPresetChange = useCallback((newPreset: OutputPreset) => {
+    setSelectedPreset(newPreset);
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        // Only update tasks that don't have a custom preset
+        if (task.preset === undefined) {
+          const { suffix, ext } = getPresetOutputInfo(newPreset);
+          return { ...task, suffix, extension: ext };
+        }
+        return task;
+      })
+    );
   }, []);
 
-  // Update suffix and extension when preset changes
-  useEffect(() => {
-    if (tasks.length > 0) {
-      const { suffix, ext } = getPresetOutputInfo(selectedPreset);
-      setTasks((prevTasks) =>
-        prevTasks.map((task) => ({
-          ...task,
-          suffix,
-          extension: ext,
-        }))
-      );
-    }
-  }, [selectedPreset]);
+  // Handle toggle expand for card
+  const handleToggleExpand = useCallback((taskId: string) => {
+    setExpandedCardIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Handle task update from FileCard
+  const handleUpdateTask = useCallback((taskId: string, updates: Partial<FileTask>) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId ? { ...task, ...updates } : task
+      )
+    );
+  }, []);
+
+  // Handle apply to all from FileCard
+  const handleApplyToAll = useCallback((updates: Partial<FileTask>) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        // Apply the updates to all tasks
+        // For preset, only apply to tasks without custom presets if preset is not specified
+        if (updates.preset !== undefined) {
+          // This is a preset change - only apply to tasks without custom presets
+          if (task.preset === undefined) {
+            const { suffix, ext } = getPresetOutputInfo(updates.preset);
+            return { ...task, preset: updates.preset, suffix, extension: ext };
+          }
+          return task;
+        }
+        // For other updates (filename, segment), apply to all
+        return { ...task, ...updates };
+      })
+    );
+  }, []);
 
   // Listen for Tauri file drop events
   useEffect(() => {
@@ -329,47 +311,25 @@ function App() {
     };
   }, [isTranscoding, lastDropTime]);
 
-  // Calculate estimated total size
+  // Calculate estimated total size (using effective presets for each task)
   const estimatedTotalSize = useMemo(() => {
     if (tasks.length === 0) return "Select video files";
 
     let totalMinMB = 0;
     let totalMaxMB = 0;
 
-    for (const task of tasks) {
-      const metaIndex = selectedFiles.indexOf(task.id);
-      const meta = metaIndex >= 0 ? metadataList[metaIndex] : null;
-      if (!meta) continue;
-
-      const segmentDuration = task.segment
-        ? (task.segment.end_sec ?? meta.duration_sec) - task.segment.start_sec
-        : meta.duration_sec;
-      const adjustedMeta = { ...meta, duration_sec: segmentDuration };
-      const size = estimateOutputSize(adjustedMeta, selectedPreset);
-      totalMinMB += size.minMB;
-      totalMaxMB += size.maxMB;
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      const meta = metadataList[i];
+      const effectivePreset = getEffectivePreset(task, selectedPreset);
+      const sizeRange = getEstimatedSizeRange(task, meta, effectivePreset);
+      if (!sizeRange) continue;
+      totalMinMB += sizeRange.minMB;
+      totalMaxMB += sizeRange.maxMB;
     }
 
     return formatSizeRange(totalMinMB, totalMaxMB);
-  }, [tasks, selectedFiles, metadataList, selectedPreset]);
-
-  // Get estimated size for a specific task
-  const getEstimatedSizeForTask = (taskId: string): string => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return "~0 MB";
-
-    const metaIndex = selectedFiles.indexOf(taskId);
-    const meta = metaIndex >= 0 ? metadataList[metaIndex] : null;
-    if (!meta) return "~0 MB";
-
-    const segmentDuration = task.segment
-      ? (task.segment.end_sec ?? meta.duration_sec) - task.segment.start_sec
-      : meta.duration_sec;
-    const adjustedMeta = { ...meta, duration_sec: segmentDuration };
-    const size = estimateOutputSize(adjustedMeta, selectedPreset);
-
-    return formatSizeRange(size.minMB, size.maxMB);
-  };
+  }, [tasks, metadataList, selectedPreset]);
 
   // Calculate estimated time remaining
   const estimatedTime = useMemo(() => {
@@ -380,7 +340,7 @@ function App() {
     if (completedTasks.length === 0) return "";
 
     // Simple estimation: assume similar times for remaining files
-    return `~${remainingTasks.length} file${remainingTasks.length > 1 ? "s" : ""} remaining`;
+    return `~${remainingTasks.length} ${pluralize(remainingTasks.length, "file")} remaining`;
   }, [tasks]);
 
   const handleFilesSelect = async (paths: string[]) => {
@@ -394,7 +354,7 @@ function App() {
         });
         newMetadata.push(meta);
       } catch (err) {
-        console.error("Failed to fetch metadata:", err);
+        logger.error("Failed to fetch metadata:", err);
         newMetadata.push(null);
       }
     }
@@ -441,6 +401,7 @@ function App() {
           progress: null,
           originalFileName,
           segment: null,
+          preset: undefined, // Use global preset by default
         });
       }
       return newTasks;
@@ -470,51 +431,23 @@ function App() {
           },
         ],
       });
-      if (selected && selected.length > 0) {
-        await handleFilesSelect(selected as string[]);
+      if (typeof selected === "string") {
+        await handleFilesSelect([selected]);
+      } else if (Array.isArray(selected) && selected.length > 0) {
+        await handleFilesSelect(selected);
       }
     } catch (err) {
-      console.error("Failed to open file dialog:", err);
-    }
-  }
-
-  async function handleBrowseFolder() {
-    try {
-      const selected = await open({
-        directory: true,
-        multiple: false,
-      });
-      if (selected) {
-        const videoFiles = await readVideoFilesFromFolder(selected as string);
-        if (videoFiles.length > 0) {
-          await handleFilesSelect(videoFiles);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to open folder dialog:", err);
-    }
-  }
-
-  function handleClearAllFiles() {
-    setSelectedFiles([]);
-    setMetadataList([]);
-    setTasks([]);
-    setTaskDurations(new Map());
-    setError(null);
-  }
-
-  function handleClearCompleted() {
-    const completedTasks = tasks.filter(t => t.status === "completed" || t.status === "failed");
-    for (const task of completedTasks) {
-      handleRemoveTask(task.id);
+      logger.error("Failed to open file dialog:", err);
     }
   }
 
   const handleRemoveTask = (id: string) => {
-    setSelectedFiles((prev) => prev.filter((path) => path !== id));
-    setMetadataList((prev) => {
-      const index = selectedFiles.indexOf(id);
-      return index >= 0 ? prev.filter((_, i) => i !== index) : prev;
+    setSelectedFiles((prevFiles) => {
+      const index = prevFiles.indexOf(id);
+      setMetadataList((prevMeta) =>
+        index >= 0 ? prevMeta.filter((_, i) => i !== index) : prevMeta
+      );
+      return prevFiles.filter((path) => path !== id);
     });
     setTasks((prev) => prev.filter((task) => task.id !== id));
     setTaskDurations((prev) => {
@@ -522,23 +455,42 @@ function App() {
       newDurations.delete(id);
       return newDurations;
     });
+    setExpandedCardIds((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
   };
 
-  const handleUpdateTask = (id: string, updates: Partial<FileTask>) => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === id ? { ...task, ...updates } : task
-      )
-    );
-  };
+  const handleClearCompleted = () => {
+    const completedIds = tasks.filter((t) => t.status === "completed").map((t) => t.id);
+    if (completedIds.length === 0) return;
 
-  const handleApplySegmentToAll = (segment: TimeSegment | null) => {
-    setTasks((prev) =>
-      prev.map((task) => ({
-        ...task,
-        segment,
-      }))
-    );
+    setSelectedFiles((prev) => prev.filter((path) => !completedIds.includes(path)));
+    setTasks((prev) => prev.filter((task) => task.status !== "completed"));
+
+    // Also clean up metadata and durations
+    setMetadataList((prev) => {
+      const indicesToRemove: number[] = [];
+      completedIds.forEach((id) => {
+        const index = prev.findIndex((m) => m?.file_path === id);
+        if (index >= 0) indicesToRemove.push(index);
+      });
+      return prev.filter((_, i) => !indicesToRemove.includes(i));
+    });
+
+    setTaskDurations((prev) => {
+      const newDurations = new Map(prev);
+      completedIds.forEach((id) => newDurations.delete(id));
+      return newDurations;
+    });
+
+    // Also clean up expanded card IDs
+    setExpandedCardIds((prev) => {
+      const newSet = new Set(prev);
+      completedIds.forEach((id) => newSet.delete(id));
+      return newSet;
+    });
   };
 
   const handleStartBatchTranscode = async () => {
@@ -549,11 +501,11 @@ function App() {
         const duration = taskDurations.get(task.id) ?? 0;
         const seg = task.segment;
         if (seg.start_sec >= duration) {
-          setError(`Invalid segment start time for ${task.originalFileName}`);
+          setError(ERROR_MESSAGES.INVALID_SEGMENT_START(task.originalFileName));
           return;
         }
         if (seg.end_sec !== null && seg.end_sec <= seg.start_sec) {
-          setError(`Invalid segment end time for ${task.originalFileName}`);
+          setError(ERROR_MESSAGES.INVALID_SEGMENT_END(task.originalFileName));
           return;
         }
       }
@@ -565,28 +517,44 @@ function App() {
     setTasks((prev) =>
       prev.map((task) => ({
         ...task,
-        status: "pending" as const,
+        status: "transcoding" as const,
         progress: null,
       }))
     );
 
-    try {
-      const inputPaths = tasks.map((t) => t.inputPath);
-      const outputPaths = tasks.map((t) => getOutputPath(t, outputDir));
-      const segments = tasks.map((t) => t.segment);
+    // Group tasks by preset (since backend doesn't support per-file presets)
+    const tasksByPreset = tasks.reduce((groups, task) => {
+      const preset = getEffectivePreset(task, selectedPreset);
+      if (!groups[preset]) groups[preset] = [];
+      groups[preset].push(task);
+      return groups;
+    }, {} as Record<OutputPreset, FileTask[]>);
 
-      const batchId = await invoke("start_batch_transcode", {
-        request: {
-          input_paths: inputPaths,
-          output_paths: outputPaths,
-          preset: selectedPreset,
-          segments: segments,
-        },
-      });
-      setCurrentBatchId(batchId as string);
+    try {
+      // Process each preset group sequentially
+      for (const [preset, presetTasks] of Object.entries(tasksByPreset)) {
+        const inputPaths = presetTasks.map((t) => t.inputPath);
+        const outputPaths = presetTasks.map((t) => getOutputPath(t, outputDir));
+        const segments = presetTasks.map((t) => t.segment);
+
+        const batchId = await invoke("start_batch_transcode", {
+          request: {
+            input_paths: inputPaths,
+            output_paths: outputPaths,
+            preset: preset as OutputPreset,
+            segments: segments,
+          },
+        });
+
+        // Only set the first batchId (subsequent batches will share progress tracking)
+        if (!currentBatchId) {
+          setCurrentBatchId(batchId as string);
+        }
+      }
     } catch (err) {
       setIsTranscoding(false);
-      setError(err as string);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(errorMessage);
     }
   };
 
@@ -613,29 +581,16 @@ function App() {
     {
       key: "Escape",
       handler: () => {
-        if (editingTaskId) setEditingTaskId(null);
         if (settingsModal.isOpen) settingsModal.close();
+        // Clear all expanded cards
+        setExpandedCardIds(new Set());
       },
-      description: "Close dialogs",
+      description: "Close dialogs/collapse cards",
     },
   ]);
 
-  // File menu items
-  const fileMenuItems: DropdownItem[] = [
-    { label: "Add Files...", onClick: handleBrowse, icon: "📄" },
-    { label: "Add Folder...", onClick: handleBrowseFolder, icon: "📁" },
-    { label: "", onClick: () => {}, divider: true },
-    { label: "Clear All Files", onClick: handleClearAllFiles, icon: "🗑" },
-    { label: "Clear Completed", onClick: handleClearCompleted, icon: "✓" },
-  ];
-
   const completedCount = tasks.filter(t => t.status === "completed").length;
   const failedCount = tasks.filter(t => t.status === "failed").length;
-
-  const editingTask = editingTaskId ? tasks.find(t => t.id === editingTaskId) : null;
-  const editingTaskMetadata = editingTask
-    ? metadataList[selectedFiles.indexOf(editingTaskId!)] ?? null
-    : null;
 
   if (checking) {
     return (
@@ -674,19 +629,14 @@ function App() {
       {/* Header */}
       <header className="app-header">
         <h1 className="app-header-title">Editing Transcoder</h1>
-        <div className="app-header-actions">
-          <button
-            className="icon-button"
-            onClick={settingsModal.open}
-            title="Settings"
-          >
-            ⚙
-          </button>
-          <Dropdown
-            trigger={<span className="dropdown-trigger-text">📁 ▼</span>}
-            items={fileMenuItems}
-          />
-        </div>
+        <button
+          className="text-button settings-button"
+          onClick={settingsModal.open}
+          title="Settings"
+          aria-label="Open Settings"
+        >
+          Settings
+        </button>
       </header>
 
       {/* Main Body */}
@@ -695,7 +645,7 @@ function App() {
         <aside className="sidebar">
           <SidebarPanel
             selectedPreset={selectedPreset}
-            onPresetChange={setSelectedPreset}
+            onPresetChange={handleGlobalPresetChange}
             outputDir={outputDir}
             onOutputDirChange={setOutputDir}
             estimatedSize={estimatedTotalSize}
@@ -704,6 +654,8 @@ function App() {
             onStartTranscode={handleStartBatchTranscode}
             isTranscoding={isTranscoding}
             canStart={tasks.length > 0 && !!outputDir}
+            completedCount={completedCount}
+            onClearCompleted={handleClearCompleted}
           />
         </aside>
 
@@ -711,24 +663,30 @@ function App() {
         <main className="main-content">
           <div className="file-queue-container">
             {tasks.length === 0 ? (
-              <FileDropZone onFilesDrop={handleFilesSelect} disabled={isTranscoding} />
+              <FileDropZone
+                onFilesDrop={handleFilesSelect}
+                onAddFiles={handleBrowse}
+                disabled={isTranscoding}
+              />
             ) : (
-              <>
+              <div className="file-queue-wrapper">
                 <div className="file-queue-header">
                   <h2 className="file-queue-title">
                     Queue
-                    <span className="file-queue-count">({tasks.length} file{tasks.length > 1 ? "s" : ""})</span>
+                    <span className="file-queue-count">({tasks.length} {pluralize(tasks.length, "file")})</span>
                   </h2>
                 </div>
                 <FileQueue
                   tasks={tasks}
                   metadataList={metadataList}
-                  taskDurations={taskDurations}
-                  selectedPreset={selectedPreset}
-                  onEditFile={setEditingTaskId}
+                  globalPreset={selectedPreset}
                   onRemoveTask={handleRemoveTask}
+                  onUpdateTask={handleUpdateTask}
+                  onApplyToAll={handleApplyToAll}
+                  expandedCardIds={expandedCardIds}
+                  onToggleExpand={handleToggleExpand}
                 />
-              </>
+              </div>
             )}
           </div>
         </main>
@@ -749,20 +707,6 @@ function App() {
         settings={appSettings}
         onSettingsChange={setAppSettings}
       />
-
-      {editingTask && editingTaskMetadata && (
-        <EditFileDialog
-          isOpen={!!editingTaskId}
-          onClose={() => setEditingTaskId(null)}
-          task={editingTask}
-          metadata={editingTaskMetadata}
-          preset={selectedPreset}
-          estimatedSize={getEstimatedSizeForTask(editingTaskId!)}
-          onUpdateTask={(updates) => handleUpdateTask(editingTaskId!, updates)}
-          onApplyToAll={handleApplySegmentToAll}
-          disabled={isTranscoding}
-        />
-      )}
 
       {/* Error Message */}
       {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}

@@ -29,19 +29,45 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  min-height: 120px;
+  gap: 1rem;
+  min-height: 160px;
 }
 
 .file-drop-zone-icon {
-  font-size: 3rem;
-  opacity: 0.6;
+  width: 64px;
+  height: 64px;
+  border: 3px dashed var(--border, #ccc);
+  border-radius: 50%;
+  opacity: 0.4;
 }
 
 .file-drop-zone-text {
   font-size: 1rem;
   color: var(--text-secondary, #666);
   margin: 0;
+  text-align: center;
+  max-width: 300px;
+}
+
+.file-drop-zone-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary, #396cd8);
+  background-color: transparent;
+  border: 2px solid var(--primary, #396cd8);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast, 150ms ease);
+}
+
+.file-drop-zone-button:hover {
+  background-color: var(--primary, #396cd8);
+  color: white;
+}
+
+.file-drop-zone-button:active {
+  transform: scale(0.98);
 }
 
 /* Dark mode support */
@@ -61,7 +87,21 @@
     background-color: var(--primary-bg, #1a2840);
   }
 
+  .file-drop-zone-icon {
+    border-color: var(--border, #555);
+  }
+
   .file-drop-zone-text {
     color: var(--text-secondary, #aaa);
+  }
+
+  .file-drop-zone-button {
+    color: var(--primary, #5a9eff);
+    border-color: var(--primary, #5a9eff);
+  }
+
+  .file-drop-zone-button:hover {
+    background-color: var(--primary, #5a9eff);
+    color: white;
   }
 }

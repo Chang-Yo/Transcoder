@@ -14,9 +14,9 @@
   -webkit-text-size-adjust: 100%;
 
   /* Layout variables */
-  --sidebar-width: 280px;
+  --sidebar-width: 300px;
   --header-height: 56px;
-  --status-bar-height: 48px;
+  --status-bar-height: 60px;
 
   /* Spacing */
   --spacing-sm: 0.5rem;
@@ -24,7 +24,10 @@
   --spacing-lg: 1.5rem;
 
   /* Border radius */
-  --border-radius: 8px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --border-radius: var(--radius-lg);
 
   /* Transitions */
   --transition-fast: 150ms ease;
@@ -33,8 +36,14 @@
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+
+  /* Border hierarchy */
+  --border-subtle: #f0f0f0;
+  --border-medium: #e0e0e0;
+  --border-strong: #d0d0d0;
 
   /* Colors - Light mode defaults */
   --primary: #396cd8;
@@ -95,6 +104,17 @@
     --border: #444;
     --border-hover: #555;
 
+    /* Border hierarchy - dark mode */
+    --border-subtle: #333;
+    --border-medium: #444;
+    --border-strong: #555;
+
+    /* Shadows - dark mode */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
+
     --text-primary: #f6f6f6;
     --text-secondary: #aaa;
     --text-muted: #888;
@@ -147,4 +167,43 @@ select:focus-visible,
 textarea:focus-visible {
   outline: 2px solid var(--primary, #396cd8);
   outline-offset: 2px;
+}
+
+/* Text button style */
+.text-button {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  transition: background-color var(--transition-fast, 150ms ease),
+    color var(--transition-fast, 150ms ease);
+}
+
+.text-button:hover {
+  background-color: var(--bg-secondary, #f0f0f0);
+  color: var(--text-primary, #0f0f0f);
+}
+
+.text-button:active {
+  background-color: var(--bg-active, #e0e0e0);
+}
+
+/* Dark mode for text button */
+@media (prefers-color-scheme: dark) {
+  .text-button {
+    color: var(--text-secondary, #aaa);
+  }
+
+  .text-button:hover {
+    background-color: var(--bg-secondary, #3a3a3a);
+    color: var(--text-primary, #f6f6f6);
+  }
+
+  .text-button:active {
+    background-color: var(--bg-active, #2a2a2a);
+  }
 }

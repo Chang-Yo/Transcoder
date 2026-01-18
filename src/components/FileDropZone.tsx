@@ -3,10 +3,11 @@ import "./FileDropZone.css";
 
 export interface FileDropZoneProps {
   onFilesDrop: (paths: string[]) => void;
+  onAddFiles?: () => void;
   disabled?: boolean;
 }
 
-export function FileDropZone({ onFilesDrop, disabled = false }: FileDropZoneProps) {
+export function FileDropZone({ onFilesDrop, onAddFiles, disabled = false }: FileDropZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -53,10 +54,19 @@ export function FileDropZone({ onFilesDrop, disabled = false }: FileDropZoneProp
       onDrop={handleDrop}
     >
       <div className="file-drop-zone-content">
-        <div className="file-drop-zone-icon">📁</div>
+        <div className="file-drop-zone-icon"></div>
         <p className="file-drop-zone-text">
-          {disabled ? "Add files disabled" : "Drag and drop video files here"}
+          {disabled ? "Add files disabled" : "Drag and drop video files or folders here"}
         </p>
+        {onAddFiles && !disabled && (
+          <button
+            className="file-drop-zone-button"
+            onClick={onAddFiles}
+            type="button"
+          >
+            Add Files
+          </button>
+        )}
       </div>
     </div>
   );

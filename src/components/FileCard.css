@@ -1,24 +1,12 @@
 .file-card {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  flex-direction: column;
   background-color: var(--surface, #ffffff);
   border: 1px solid var(--border, #e0e0e0);
   border-radius: var(--border-radius, 8px);
   transition: all var(--transition-fast, 150ms ease);
-  animation: cardSlideIn 250ms ease;
-}
-
-@keyframes cardSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  animation: fadeSlideIn 250ms ease;
+  overflow: hidden;
 }
 
 .file-card:hover {
@@ -41,6 +29,41 @@
   background-color: var(--error-bg-light, #fce8e8);
 }
 
+/* Summary Section (always visible) */
+.file-card-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.file-card-expand-toggle {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  font-size: 0.625rem;
+  box-shadow: none;
+}
+
+.file-card-expand-toggle:hover {
+  color: var(--text-secondary, #666);
+}
+
+.file-card-expand-toggle.expanded {
+  transform: rotate(180deg);
+}
+
 .file-card-main {
   flex: 1;
   min-width: 0;
@@ -58,6 +81,36 @@
 .file-card-status-icon {
   font-size: 1rem;
   flex-shrink: 0;
+}
+
+.file-card-status-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-sm, 4px);
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.file-card-status-label.status-pending {
+  background-color: var(--bg-secondary, #f0f0f0);
+  color: var(--text-secondary, #666);
+}
+
+.file-card-status-label.status-transcoding {
+  background-color: var(--primary-bg-light, #f0f4ff);
+  color: var(--primary, #396cd8);
+}
+
+.file-card-status-label.status-completed {
+  background-color: var(--success-bg-light, #e8f5e9);
+  color: var(--success, #28a745);
+}
+
+.file-card-status-label.status-failed {
+  background-color: var(--error-bg-light, #fce8e8);
+  color: var(--error, #dc3545);
 }
 
 .file-card-name {
@@ -93,13 +146,27 @@
   gap: 0.25rem;
   background-color: var(--bg-secondary, #f0f0f0);
   padding: 0.125rem 0.375rem;
-  border-radius: 3px;
+  border-radius: var(--radius-sm, 4px);
   font-family: monospace;
 }
 
-.file-card-preset {
+.file-card-preset-badge {
   color: var(--primary, #396cd8);
   font-weight: 500;
+  position: relative;
+}
+
+.file-card-preset-badge.has-custom-preset {
+  color: var(--primary-dark, #2a5cc8);
+}
+
+.custom-preset-indicator {
+  position: absolute;
+  top: -0.25em;
+  right: -0.75em;
+  font-size: 0.625rem;
+  color: var(--primary, #396cd8);
+  font-weight: 700;
 }
 
 .file-card-progress {
@@ -153,7 +220,7 @@
   padding: 0.25rem 0.5rem;
   background-color: var(--error, #dc3545);
   color: white;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 4px);
   font-size: 0.75rem;
   font-weight: 500;
 }
@@ -173,7 +240,7 @@
   justify-content: center;
   border: none;
   background-color: var(--bg-secondary, #f0f0f0);
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 4px);
   cursor: pointer;
   font-size: 0.875rem;
   transition: all var(--transition-fast, 150ms ease);
@@ -190,14 +257,161 @@
   cursor: not-allowed;
 }
 
-.file-card-edit:hover:not(:disabled) {
-  background-color: var(--primary-bg, #e8f4ff);
-  color: var(--primary, #396cd8);
-}
-
 .file-card-remove:hover:not(:disabled) {
   background-color: var(--error-bg-light, #fce8e8);
   color: var(--error, #dc3545);
+}
+
+/* Expanded Content */
+.file-card-expanded-content {
+  padding: 0 1rem 1rem 3rem;
+  border-top: 1px solid var(--border, #e0e0e0);
+  background-color: var(--bg-secondary, #f8f8f8);
+  animation: expandContent 0.2s ease;
+}
+
+@keyframes expandContent {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.file-card-expanded-section {
+  margin-top: 0.75rem;
+}
+
+.section-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin-bottom: 0.375rem;
+}
+
+/* Filename input */
+.file-card-filename-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.file-card-filename-field {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: var(--radius-md, 6px);
+  background-color: var(--surface, #ffffff);
+  color: var(--text-primary, #0f0f0f);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.file-card-filename-field:focus {
+  border-color: var(--primary, #396cd8);
+}
+
+.file-card-extension {
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+  font-family: monospace;
+}
+
+/* Preset description */
+.file-card-preset-desc {
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+}
+
+/* Metadata grid */
+.file-card-metadata-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.metadata-item {
+  padding: 0.25rem 0.5rem;
+  background-color: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: var(--radius-sm, 4px);
+  font-size: 0.75rem;
+  color: var(--text-secondary, #666);
+  font-family: monospace;
+}
+
+/* Size section */
+.file-card-expanded-section.size-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  border-top: 1px dashed var(--border, #e0e0e0);
+}
+
+.size-label,
+.segment-duration-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #666);
+}
+
+.segment-duration-label {
+  font-family: monospace;
+}
+
+/* Expanded actions */
+.file-card-expanded-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.file-card-apply-all-btn,
+.file-card-remove-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  transition: all var(--transition-fast, 150ms ease);
+  box-shadow: none;
+}
+
+.file-card-apply-all-btn {
+  background-color: var(--primary-bg-light, #f0f4ff);
+  color: var(--primary, #396cd8);
+  border: 1px solid var(--primary-border, #c5d9ff);
+}
+
+.file-card-apply-all-btn:hover:not(:disabled) {
+  background-color: var(--primary-bg, #e8f4ff);
+  border-color: var(--primary, #396cd8);
+}
+
+.file-card-remove-btn {
+  background-color: var(--bg-secondary, #f0f0f0);
+  color: var(--text-secondary, #666);
+  border: 1px solid var(--border, #e0e0e0);
+}
+
+.file-card-remove-btn:hover:not(:disabled) {
+  background-color: var(--error-bg-light, #fce8e8);
+  color: var(--error, #dc3545);
+  border-color: var(--error, #dc3545);
+}
+
+.file-card-apply-all-btn:disabled,
+.file-card-remove-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Dark mode support */
@@ -236,11 +450,39 @@
     color: var(--text-secondary, #aaa);
   }
 
+  .file-card-status-label.status-pending {
+    background-color: var(--bg-secondary, #3a3a3a);
+    color: var(--text-secondary, #aaa);
+  }
+
+  .file-card-status-label.status-transcoding {
+    background-color: var(--primary-bg-light, #1a2840);
+    color: var(--primary, #5a9eff);
+  }
+
+  .file-card-status-label.status-completed {
+    background-color: var(--success-bg-light, #1a3a20);
+    color: var(--success, #28a745);
+  }
+
+  .file-card-status-label.status-failed {
+    background-color: var(--error-bg-light, #3a1a1a);
+    color: var(--error, #ff6b6b);
+  }
+
   .file-card-segment {
     background-color: var(--bg-secondary, #3a3a3a);
   }
 
-  .file-card-preset {
+  .file-card-preset-badge {
+    color: var(--primary, #5a9eff);
+  }
+
+  .file-card-preset-badge.has-custom-preset {
+    color: var(--primary, #7ab8ff);
+  }
+
+  .custom-preset-indicator {
     color: var(--primary, #5a9eff);
   }
 
@@ -265,13 +507,61 @@
     background-color: var(--bg-hover, #4a4a4a);
   }
 
-  .file-card-edit:hover:not(:disabled) {
-    background-color: var(--primary-bg, #1a2840);
-    color: var(--primary, #5a9eff);
-  }
-
   .file-card-remove:hover:not(:disabled) {
     background-color: var(--error-bg-light, #3a1a1a);
     color: var(--error, #ff6b6b);
+  }
+
+  .file-card-expanded-content {
+    background-color: var(--bg-secondary, #1e1e1e);
+    border-top-color: var(--border, #444);
+  }
+
+  .file-card-filename-field {
+    background-color: var(--surface, #2a2a2a);
+    border-color: var(--border, #444);
+    color: var(--text-primary, #f6f6f6);
+  }
+
+  .file-card-filename-field:focus {
+    border-color: var(--primary, #5a9eff);
+  }
+
+  .metadata-item {
+    background-color: var(--surface, #2a2a2a);
+    border-color: var(--border, #444);
+    color: var(--text-secondary, #aaa);
+  }
+
+  .file-card-expanded-section.size-section {
+    border-top-color: var(--border, #444);
+  }
+
+  .size-label,
+  .segment-duration-label {
+    color: var(--text-secondary, #aaa);
+  }
+
+  .file-card-apply-all-btn {
+    background-color: var(--primary-bg, #1a2840);
+    color: var(--primary, #5a9eff);
+    border-color: var(--primary-border, #2a4a80);
+  }
+
+  .file-card-apply-all-btn:hover:not(:disabled) {
+    background-color: var(--primary-bg-light, #1a2840);
+    border-color: var(--primary, #5a9eff);
+  }
+
+  .file-card-remove-btn {
+    background-color: var(--bg-secondary, #3a3a3a);
+    color: var(--text-secondary, #aaa);
+    border-color: var(--border, #444);
+  }
+
+  .file-card-remove-btn:hover:not(:disabled) {
+    background-color: var(--error-bg-light, #3a1a1a);
+    color: var(--error, #ff6b6b);
+    border-color: var(--error, #dc3545);
   }
 }

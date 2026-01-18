@@ -27,12 +27,6 @@
   margin: 0;
 }
 
-.app-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .icon-button {
   width: 36px;
   height: 36px;
@@ -77,6 +71,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 /* Sidebar */
@@ -96,12 +91,26 @@
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  min-height: 0;
 }
 
 .file-queue-container {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: var(--spacing-lg, 1.5rem);
-  overflow-y: auto;
+  min-height: 0;
+}
+
+.file-queue-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.file-queue-wrapper > .file-queue {
+  flex: 1;
   min-height: 0;
 }
 
@@ -110,6 +119,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .file-queue-title {
@@ -158,28 +168,31 @@
 
 /* Scrollbar styling */
 .sidebar::-webkit-scrollbar,
-.main-content::-webkit-scrollbar,
-.file-queue-container::-webkit-scrollbar {
+.main-content::-webkit-scrollbar {
   width: 8px;
 }
 
 .sidebar::-webkit-scrollbar-track,
-.main-content::-webkit-scrollbar-track,
-.file-queue-container::-webkit-scrollbar-track {
+.main-content::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .sidebar::-webkit-scrollbar-thumb,
-.main-content::-webkit-scrollbar-thumb,
-.file-queue-container::-webkit-scrollbar-thumb {
+.main-content::-webkit-scrollbar-thumb {
   background: var(--border, #ccc);
   border-radius: 4px;
 }
 
 .sidebar::-webkit-scrollbar-thumb:hover,
-.main-content::-webkit-scrollbar-thumb:hover,
-.file-queue-container::-webkit-scrollbar-thumb:hover {
+.main-content::-webkit-scrollbar-thumb:hover {
   background: var(--border-hover, #aaa);
+}
+
+/* Firefox scrollbar styling */
+.sidebar,
+.main-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #ccc) transparent;
 }
 
 /* Responsive: Tablet and below */
@@ -274,14 +287,12 @@
   }
 
   .sidebar::-webkit-scrollbar-thumb,
-  .main-content::-webkit-scrollbar-thumb,
-  .file-queue-container::-webkit-scrollbar-thumb {
+  .main-content::-webkit-scrollbar-thumb {
     background: var(--border, #444);
   }
 
   .sidebar::-webkit-scrollbar-thumb:hover,
-  .main-content::-webkit-scrollbar-thumb:hover,
-  .file-queue-container::-webkit-scrollbar-thumb:hover {
+  .main-content::-webkit-scrollbar-thumb:hover {
     background: var(--border-hover, #555);
   }
 }
