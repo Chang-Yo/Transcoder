@@ -54,7 +54,6 @@ export function FileQueue({
               key={task.id}
               task={task}
               metadata={metadata}
-              globalPreset={globalPreset}
               estimatedSize={getEstimatedSizeForTask(task, metadata, task.preset ?? globalPreset)}
               isExpanded={isExpanded}
               onToggleExpand={() => onToggleExpand(task.id)}

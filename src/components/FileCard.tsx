@@ -1,16 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import type { FileTask, OutputPreset, MediaMetadata, TimeSegment } from "../types";
-import { secondsToTimecode, getSegmentDuration, getPresetOutputInfo, FILE_TASK_STATUS_LABELS } from "../types";
-import { PRESET_DISPLAY_NAMES } from "../types";
-import { PRESET_INFO } from "../presetInfo";
+import type { FileTask, MediaMetadata, TimeSegment } from "../types";
+import { secondsToTimecode, getSegmentDuration, FILE_TASK_STATUS_LABELS } from "../types";
 import { TimeRangeInput } from "./TimeRangeInput";
-import { PresetDropdown } from "./PresetDropdown";
 import "./FileCard.css";
 
 export interface FileCardProps {
   task: FileTask;
   metadata: MediaMetadata | null;
-  globalPreset: OutputPreset;
   estimatedSize: string;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
@@ -22,7 +18,6 @@ export interface FileCardProps {
 export function FileCard({
   task,
   metadata,
-  globalPreset,
   estimatedSize,
   isExpanded = false,
   onToggleExpand,
@@ -32,18 +27,12 @@ export function FileCard({
 }: FileCardProps) {
   const [fileName, setFileName] = useState(task.outputFileName);
   const [localSegment, setLocalSegment] = useState<TimeSegment | null>(task.segment);
-  const [localPreset, setLocalPreset] = useState<OutputPreset | null>(task.preset ?? null);
   const cardRef = useRef<HTMLDivElement | null>(null);
-
-  // Effective preset (local or global)
-  const effectivePreset = localPreset ?? globalPreset;
-  const isUsingGlobalPreset = localPreset === null;
 
   // Sync local state with task changes
   useEffect(() => {
     setFileName(task.outputFileName);
     setLocalSegment(task.segment);
-    setLocalPreset(task.preset ?? null);
   }, [task]);
 
   const ensureCardVisible = () => {
@@ -102,19 +91,6 @@ export function FileCard({
     onToggleExpand?.();
   };
 
-  // Handle preset change
-  const handlePresetChange = (preset: OutputPreset | null) => {
-    setLocalPreset(preset);
-    if (preset !== null) {
-      const { suffix, ext } = getPresetOutputInfo(preset);
-      onUpdateTask({ preset, suffix, extension: ext });
-    } else {
-      // Use global preset
-      const { suffix, ext } = getPresetOutputInfo(globalPreset);
-      onUpdateTask({ preset: undefined, suffix, extension: ext });
-    }
-  };
-
   // Handle file name change
   const handleFileNameChange = (value: string) => {
     // Only allow valid filename characters
@@ -142,12 +118,9 @@ export function FileCard({
     onApplyToAll({
       outputFileName: fileName.trim() || task.outputFileName,
       segment: localSegment,
-      preset: localPreset !== null ? localPreset : undefined,
     });
     onToggleExpand?.(); // Collapse after applying
   };
-
-  const presetInfo = PRESET_INFO[effectivePreset];
 
   return (
     <div
@@ -185,10 +158,6 @@ export function FileCard({
                 {segmentDisplay}
               </span>
             )}
-            <span className={`file-card-preset-badge ${!isUsingGlobalPreset ? "has-custom-preset" : ""}`}>
-              {PRESET_DISPLAY_NAMES[effectivePreset]}
-              {!isUsingGlobalPreset && <span className="custom-preset-indicator" title="Custom preset">*</span>}
-            </span>
           </div>
 
           {/* Progress bar for transcoding */}
@@ -263,20 +232,6 @@ export function FileCard({
                 {task.suffix}
                 {task.extension}
               </span>
-            </div>
-          </div>
-
-          {/* Preset section */}
-          <div className="file-card-expanded-section">
-            <span className="section-label">Output Format</span>
-            <PresetDropdown
-              currentPreset={localPreset}
-              globalPreset={globalPreset}
-              onPresetChange={handlePresetChange}
-              disabled={task.status === "transcoding"}
-            />
-            <div className="file-card-preset-desc">
-              {presetInfo.description} · ~{presetInfo.bitrateMbps} Mbps at 1080p
             </div>
           </div>
 

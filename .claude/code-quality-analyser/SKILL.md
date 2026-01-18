@@ -276,3 +276,5 @@ Project Statistics:
 - For large files, present an overview first and ask if detailed analysis is needed
 - Provide refactoring suggestions with concrete code examples, not vague descriptions
 - Consider project realities and avoid over-engineering
+
+#3a3a3a

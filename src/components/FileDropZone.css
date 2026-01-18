@@ -34,11 +34,8 @@
 }
 
 .file-drop-zone-icon {
-  width: 64px;
-  height: 64px;
-  border: 3px dashed var(--border, #ccc);
-  border-radius: 50%;
-  opacity: 0.4;
+  font-size: 3rem;
+  line-height: 1;
 }
 
 .file-drop-zone-text {
@@ -85,10 +82,6 @@
   .file-drop-zone-dragging {
     border-color: var(--primary, #396cd8);
     background-color: var(--primary-bg, #1a2840);
-  }
-
-  .file-drop-zone-icon {
-    border-color: var(--border, #555);
   }
 
   .file-drop-zone-text {

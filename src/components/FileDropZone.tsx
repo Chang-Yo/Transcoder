@@ -54,7 +54,7 @@ export function FileDropZone({ onFilesDrop, onAddFiles, disabled = false }: File
       onDrop={handleDrop}
     >
       <div className="file-drop-zone-content">
-        <div className="file-drop-zone-icon"></div>
+        <div className="file-drop-zone-icon">📁</div>
         <p className="file-drop-zone-text">
           {disabled ? "Add files disabled" : "Drag and drop video files or folders here"}
         </p>

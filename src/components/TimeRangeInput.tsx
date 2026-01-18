@@ -53,18 +53,13 @@ function validateStartTimeInput(
 
 /**
  * Validate a timecode input for end time
- * Returns valid seconds, null (for "End"), or null if invalid
+ * Returns valid seconds or null if invalid
  */
 function validateEndTimeInput(
   timecode: string,
   currentSegment: TimeSegment,
   duration: number
 ): ValidationResult {
-  // Special case: "end" means end of video
-  if (timecode.toLowerCase() === "end") {
-    return { isValid: true, seconds: null };
-  }
-
   const seconds = timecodeToSeconds(timecode);
 
   // Invalid timecode format
@@ -78,12 +73,10 @@ function validateEndTimeInput(
     return { isValid: false, seconds: null };
   }
 
-  // If exceeds duration, treat as "end of video"
-  if (seconds >= duration) {
-    return { isValid: true, seconds: null };
-  }
+  // Clamp to duration if exceeds
+  const clampedSeconds = Math.min(seconds, duration);
 
-  return { isValid: true, seconds };
+  return { isValid: true, seconds: clampedSeconds };
 }
 
 export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRangeInputProps) {
@@ -102,13 +95,13 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
     if (isEnabled) {
       setStartTimeInput(secondsToTimecode(segment.start_sec));
       setEndTimeInput(
-        segment.end_sec !== null ? secondsToTimecode(segment.end_sec) : "End"
+        secondsToTimecode(segment.end_sec ?? duration)
       );
     } else {
       setStartTimeInput("");
       setEndTimeInput("");
     }
-  }, [isEnabled, segment]);
+  }, [isEnabled, segment, duration]);
 
   const handleToggle = (checked: boolean) => {
     if (checked) {
@@ -127,12 +120,12 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
     const [start, end] = values;
     const newSegment = {
       start_sec: start,
-      end_sec: end < duration ? end : null,
+      end_sec: Math.min(end, duration),
     };
     onChange(newSegment);
     // Update local input states
     setStartTimeInput(secondsToTimecode(start));
-    setEndTimeInput(end < duration ? secondsToTimecode(end) : "End");
+    setEndTimeInput(secondsToTimecode(Math.min(end, duration)));
   }, [duration, isEnabled, onChange]);
 
   const handleStartTimeChange = (timecode: string) => {
@@ -168,12 +161,12 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
     if (!result.isValid) {
       // Revert to current segment value
       setEndTimeInput(
-        segment.end_sec !== null ? secondsToTimecode(segment.end_sec) : "End"
+        secondsToTimecode(segment.end_sec ?? duration)
       );
       return;
     }
 
-    onChange({ ...segment, end_sec: result.seconds });
+    onChange({ ...segment, end_sec: result.seconds! });
   };
 
   const handleEndTimeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -185,7 +178,7 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
 
   const handleEndToVideoEnd = () => {
     if (!isEnabled || !segment) return;
-    onChange({ ...segment, end_sec: null });
+    onChange({ ...segment, end_sec: duration });
   };
 
   // Slider values (0-100 scale for visual representation)
@@ -210,7 +203,7 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
           onChange={(e) => handleToggle(e.target.checked)}
           disabled={disabled}
         />
-        <span>Enable time range</span>
+        <span>Enable time range <span className="time-range-hint">(drag handles to adjust)</span></span>
       </label>
 
       {isEnabled && (
@@ -286,7 +279,7 @@ export function TimeRangeInput({ duration, segment, onChange, disabled }: TimeRa
                 onBlur={handleEndTimeBlur}
                 onKeyDown={handleEndTimeKeyDown}
                 disabled={disabled}
-                placeholder="00:00:00 or End"
+                placeholder="00:00:00"
                 maxLength={8}
               />
               {segment.end_sec !== null && segment.end_sec < duration && (
