@@ -1,4 +1,7 @@
-# Transcoder
+<p align="center">
+  <img src="docs/gh-pages/public/logo.svg" alt="Transcoder Logo" width="160" />
+</p>
+<h1 align="center">TRANSCODER</h1>
 
 一款将视频转换为剪辑友好格式（ProRes、DNxHR）的桌面应用，专为 Adobe Premiere Pro 和 After Effects 设计。
 
