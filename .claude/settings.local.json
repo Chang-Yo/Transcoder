@@ -9,7 +9,8 @@
       "Bash(powershell:*)",
       "Bash(npm run check:*)",
       "Bash(npm run build:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(magick:*)"
     ]
   }
 }
