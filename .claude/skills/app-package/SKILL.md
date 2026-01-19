@@ -1,15 +1,15 @@
 ---
 name: app-package
-description: Windows Tauri application packaging skill. Builds the release version and creates a zip distribution with FFmpeg binaries in the ffmpeg/ subdirectory. Outputs to dist-release/ folder.
+description: Windows Tauri application packaging skill. Summarizes code changes, updates documentation, commits and merges to main with tag, then creates distribution zip package.
 license: MIT
 metadata:
   author: Transcoder
-  version: "1.0.0"
+  version: "2.0.0"
 ---
 
 # App Package Skill
 
-Builds and packages the Editing Transcoder Windows application for distribution.
+Packages the Transcoder Windows application for distribution.
 
 ## When to Use
 
@@ -20,59 +20,99 @@ Call this skill when:
 
 ## Packaging Process
 
-1. **Ask for confirmation and version info**
+### Phase 1: Pre-Build Documentation
+
+1. **Summarize code changes**
+   - Review recent commits and changes since last release
+   - Present summary to user for confirmation
+
+2. **Gather release info**
    - Ask user for version number (default: current version from Cargo.toml)
-   - Confirm before proceeding
+   - Confirm release summary and version before proceeding
 
-2. **Update version files** (if version changed)
-   - `src-tauri/Cargo.toml` - update `version` field
-   - `src-tauri/tauri.conf.json` - update `package.version` field
+3. **Update documentation**
+   - `README.md` - update version info if needed
+   - `CHANGELOG.md` - add new release entry with changes summary
+   - `docs/gh-pages/` - update documentation site if applicable
+   - Ask user to confirm any uncertain information
 
-3. **Build release**
-   ```bash
-   npm run tauri build
-   ```
+### Phase 2: Git Operations
 
-4. **Create distribution package**
-   - Create `dist-release/` directory
-   - Create `dist-release/ffmpeg/` subdirectory
-   - Copy `src-tauri/target/release/transcoder.exe`
-   - Copy `src-tauri/binaries/windows/ffmpeg.exe` to `ffmpeg/`
-   - Copy `src-tauri/binaries/windows/ffprobe.exe` to `ffmpeg/`
-   - Copy `README.md`
-
-5. **Create zip archive**
-   ```bash
-   powershell -Command "Compress-Archive -Path dist-release\* -DestinationPath dist-release/transcoder-v{version}-windows.zip"
-   ```
-6. **Update the Docs
-   - changelog
-   - readme
-   
-   You should never add the Claude's cowork name in the commit message.
-7. **Commit changes**
+4. **Commit changes**
    ```bash
    git add .
    git commit -m "Release v{version}"
    ```
+   Note: Never add Claude Code to co-author list
+
+5. **Switch to main branch and merge**
+   ```bash
+   git checkout main
+   git merge {current-branch}
+   ```
+
+6. **Create release tag**
+   ```bash
+   git tag v{version}
+   ```
+
+### Phase 3: Build & Package
+
+7. **Build release binary**
+   ```bash
+   npm run tauri build
+   ```
+
+8. **Update dist-release folder**
+   - The `dist-release/` folder already exists with `ffmpeg/` subdirectory
+   - Only update these files:
+     - Replace `transcoder.exe` with newly built binary from `src-tauri/target/release/`
+     - Replace `README.md` if it has changed
+   - The `ffmpeg/` folder and its contents remain unchanged
+
+9. **Create zip archive**
+   ```bash
+   powershell -Command "Compress-Archive -Path dist-release\* -DestinationPath dist-release/transcoder-v{version}-windows.zip"
+   ```
+
+10. **Cleanup old archives**
+    - Delete old zip files (e.g., `transcoder-v0.5.1-windows.zip`)
+    - Keep only the newest release
+
+11. **Verify package**
+    - Check zip file size (should be 100-200 MB range)
+    - Confirm all required files are included
+
+### Phase 4: Completion
+
+12. **Report to user**
+    - Summarize what was done
+    - Show zip file size
+    - Ask user if they want to push to remote:
+      - Push commits: `git push origin main`
+      - Push tag: `git push origin v{version}`
 
 ## Output Structure
 
 ```
 dist-release/
-├── transcoder.exe          (5-6 MB)
+├── transcoder.exe          (5-6 MB, from release build)
 ├── ffmpeg/
-│   ├── ffmpeg.exe
-│   └── ffprobe.exe
-├── README.md
+│   ├── ffmpeg.exe          (static, unchanged)
+│   └── ffprobe.exe         (static, unchanged)
+├── README.md               (may be updated)
 └── transcoder-v{version}-windows.zip
 ```
 
 ## Files Modified
 
-- `src-tauri/Cargo.toml` - version
-- `src-tauri/tauri.conf.json` - version
+- `src-tauri/Cargo.toml` - version (if changed)
+- `src-tauri/tauri.conf.json` - version (if changed)
+- `README.md` - documentation updates
+- `CHANGELOG.md` - release notes
+- `docs/gh-pages/*` - site documentation (if applicable)
 
 ## Files Created
 
 - `dist-release/transcoder-v{version}-windows.zip` - distribution package
+- `v{version}` git tag

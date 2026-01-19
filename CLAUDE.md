@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an **Editing Transcoder** - a desktop application built with **Tauri + Rust + TypeScript** that converts video files to editing-friendly intermediate codecs (ProRes, DNxHR) for use in Adobe Premiere Pro and After Effects.
+This is an **Transcoder** - a desktop application built with **Tauri + Rust + TypeScript** that converts video files to editing-friendly intermediate codecs (ProRes, DNxHR) for use in Adobe Premiere Pro and After Effects.
 
 **Key Philosophy**: Intent-driven, not parameter-driven. Users select "I want to edit," not "I want to set encoding parameters." The tool handles all ffmpeg internals automatically.
 
@@ -72,7 +72,7 @@ The application uses a left-right split layout:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  Header: [Editing Transcoder]          [Settings ⚙] [File Menu 📁 ▼]     │
+│  Header: [Transcoder]          [Settings ⚙] [File Menu 📁 ▼]     │
 ├────────────────────────┬────────────────────────────────────────────────┤
 │  Sidebar (280px)      │  Main Content Area                              │
 │  ┌──────────────────┐ │  ┌──────────────────────────────────────────┐  │

@@ -3,6 +3,7 @@ import { Menu, X } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 import { REPO_URL } from '../constants';
+import logoUrl from '../assets/logo.svg';
 
 const navItems = [
   { href: '#features', label: 'Features' },
@@ -31,10 +32,11 @@ export function Header() {
           <motion.a
             href="#"
             className="logo"
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.02 }}
             onClick={(e) => handleNavClick(e, '#')}
           >
-            Editing Transcoder
+            <img src={logoUrl} alt="Transcoder" className="logo-icon" />
+            <span className="logo-text">Transcoder</span>
           </motion.a>
 
           <nav className="nav-desktop">
@@ -97,9 +99,13 @@ export function Header() {
           top: 0;
           z-index: 100;
           border-bottom: 1px solid var(--border);
-          padding: 1rem 2rem;
-          background: var(--surface);
-          backdrop-filter: blur(8px);
+          padding: 0.75rem 2rem;
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(12px);
+          transition: background 0.3s ease;
+        }
+        [data-theme='dark'] .header {
+          background: rgba(26, 35, 50, 0.85);
         }
         .header-content {
           max-width: 1200px;
@@ -109,9 +115,22 @@ export function Header() {
           align-items: center;
         }
         .logo {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
           font-weight: 700;
-          font-size: 1.25rem;
+          font-size: 1.15rem;
           color: var(--primary);
+        }
+        .logo-icon {
+          width: 32px;
+          height: 32px;
+        }
+        .logo-text {
+          background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
         .nav-desktop {
           display: flex;
@@ -122,6 +141,8 @@ export function Header() {
           color: var(--text-muted);
           position: relative;
           transition: color 0.2s;
+          font-weight: 500;
+          font-size: 0.95rem;
         }
         .nav-link:hover {
           color: var(--primary);
@@ -169,6 +190,9 @@ export function Header() {
           }
           .nav-mobile {
             display: flex;
+          }
+          .logo-text {
+            display: none;
           }
         }
       `}</style>

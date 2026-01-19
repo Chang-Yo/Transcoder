@@ -4,8 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Editing Transcoder - Convert videos to editing-friendly formats (ProRes, DNxHR) for Adobe Premiere Pro and After Effects." />
-    <title>Editing Transcoder - Video to ProRes/DNxHR Converter</title>
+    <meta name="description" content="Transcoder - Convert videos to editing-friendly formats (ProRes, DNxHR) for Adobe Premiere Pro and After Effects." />
+    <title>Transcoder - Video to ProRes/DNxHR Converter</title>
+    <script>
+      (function() {
+        const THEME_KEY = 'transcoder-theme';
+        const stored = localStorage.getItem(THEME_KEY);
+        const theme = stored || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

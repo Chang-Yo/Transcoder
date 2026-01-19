@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.1] - 2025-01-19
 
+### Added
+- Custom logo design with cyan color scheme (#4AA3C0, #9BE1F3)
+- Logo icons generated for GitHub Pages showcase site
+- Dark mode set as default theme for showcase website
+
+### Changed
+- Renamed product from "Editing Transcoder" to "Transcoder" across all files
+- Updated GitHub Pages showcase site with new visual design:
+  - Cyan color scheme matching logo
+  - Professional Lucide React icons replacing emoji
+  - New Showcase section with app preview mockup
+  - Logo integrated in Hero, Header, and Footer components
+- Updated app window title, metadata, and documentation
+
 ### Fixed
 - Time range export now respects the specified start time when trimming
 

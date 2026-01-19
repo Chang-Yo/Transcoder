@@ -628,7 +628,7 @@ function App() {
     <div className="app-layout">
       {/* Header */}
       <header className="app-header">
-        <h1 className="app-header-title">Editing Transcoder</h1>
+        <h1 className="app-header-title">Transcoder</h1>
         <button
           className="text-button settings-button"
           onClick={settingsModal.open}
