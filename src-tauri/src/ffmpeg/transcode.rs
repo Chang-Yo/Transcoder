@@ -81,13 +81,25 @@ fn execute_transcode(
         .block_on(ffprobe::extract_metadata(&request.input_path))
         .map_err(|e| TranscodeError::MediaInfoFailed(e.to_string()))?;
 
+    let segment = request.segment.as_ref().map(|seg| {
+        if seg.is_valid(metadata.duration_sec) {
+            seg.clone()
+        } else {
+            seg.clamp(metadata.duration_sec)
+        }
+    });
+
     // Build ffmpeg command from preset (with segment support)
     let args = request
         .preset
-        .build_ffmpeg_args(&metadata, &request.output_path, request.segment.as_ref());
+        .build_ffmpeg_args(&metadata, &request.output_path, segment.as_ref());
+
+    // Get ffmpeg path
+    let ffmpeg_path = crate::ffmpeg::locator::get_ffmpeg_path()
+        .map_err(|e| TranscodeError::FfmpegNotFound(e))?;
 
     // Spawn ffmpeg with stderr piped for progress parsing (no console window)
-    let mut child = Command::new("ffmpeg")
+    let mut child = Command::new(&ffmpeg_path)
         .args(&args)
         .stderr(Stdio::piped())
         .spawn_no_console()
@@ -103,7 +115,7 @@ fn execute_transcode(
     for line in reader.lines() {
         let line = line.map_err(|e| TranscodeError::TranscodeFailed(e.to_string()))?;
 
-        if let Some(progress) = parse_ffmpeg_progress(&line, &metadata, request.segment.as_ref()) {
+        if let Some(progress) = parse_ffmpeg_progress(&line, &metadata, segment.as_ref()) {
             emit_progress(window, mode, progress);
         }
     }
@@ -163,8 +175,7 @@ fn parse_ffmpeg_progress(
 
     // Determine effective duration for progress calculation
     let (segment_start, effective_duration) = if let Some(seg) = segment {
-        let end = seg.end_sec.unwrap_or(metadata.duration_sec);
-        (seg.start_sec, end - seg.start_sec)
+        (seg.start_sec, seg.duration(metadata.duration_sec))
     } else {
         (0.0, metadata.duration_sec)
     };

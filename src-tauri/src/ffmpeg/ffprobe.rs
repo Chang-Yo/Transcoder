@@ -7,7 +7,10 @@ use std::process::Command;
 pub async fn extract_metadata(
     file_path: &str,
 ) -> Result<MediaMetadata, TranscodeError> {
-    let output = Command::new("ffprobe")
+    let ffprobe_path = crate::ffmpeg::locator::get_ffprobe_path()
+        .map_err(|e| TranscodeError::FfprobeNotFound(e))?;
+
+    let output = Command::new(&ffprobe_path)
         .args([
             "-hide_banner",
             "-loglevel",

@@ -30,8 +30,11 @@ impl OutputPreset {
         // Add end time parameter if specified
         if let Some(seg) = segment {
             if let Some(end) = seg.end_sec {
-                args.push("-to".to_string());
-                args.push(format_time_as_ffmpeg(end));
+                let duration = (end - seg.start_sec).max(0.0);
+                if duration > 0.0 {
+                    args.push("-t".to_string());
+                    args.push(format_time_as_ffmpeg(duration));
+                }
             }
         }
 

@@ -16,7 +16,7 @@ This is an **Editing Transcoder** - a desktop application built with **Tauri + R
 - **Frontend**: TypeScript + Web UI (Tauri)
 - **Backend**: Rust (Tauri Commands)
 - **Media Processing**: System-level `ffmpeg` and `ffprobe`
-- **Development Platform**: Windows 10/11, **Powershell**, so always remember use the right command for powershell
+- **Development Platform**: Windows 10/11
 ### Backend Responsibilities (Rust)
 - Validate ffmpeg/ffprobe availability
 - Call ffprobe to extract media metadata (resolution, framerate, bit depth, chroma subsampling, audio codec)
