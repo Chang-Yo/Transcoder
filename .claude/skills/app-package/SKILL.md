@@ -70,9 +70,10 @@ Call this skill when:
      - Replace `README.md` if it has changed
    - The `ffmpeg/` folder and its contents remain unchanged
 
-9. **Create zip archive**
-   ```bash
-   powershell -Command "Compress-Archive -Path dist-release\* -DestinationPath dist-release/transcoder-v{version}-windows.zip"
+9. **Update files + create zip (single command)**
+   - Choose `{version}` by matching the existing zip naming pattern in `dist-release/`
+   ```powershell
+   powershell -Command "$version='{version}'; Copy-Item -Force src-tauri\target\release\transcoder.exe dist-release\transcoder.exe; Copy-Item -Force README.md dist-release\README.md; Compress-Archive -Force -Path dist-release\transcoder.exe,dist-release\README.md,dist-release\ffmpeg -DestinationPath dist-release\transcoder-v$version-windows.zip"
    ```
 
 10. **Cleanup old archives**
@@ -102,6 +103,16 @@ dist-release/
 │   └── ffprobe.exe         (static, unchanged)
 ├── README.md               (may be updated)
 └── transcoder-v{version}-windows.zip
+```
+
+### The uncompressed zip structure
+```
+dist-release/
+├── transcoder.exe  
+├── ffmpeg/
+│   ├── ffmpeg.exe 
+│   └── ffprobe.exe
+└── README.md 
 ```
 
 ## Files Modified

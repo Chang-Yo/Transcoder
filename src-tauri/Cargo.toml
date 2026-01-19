@@ -1,6 +1,6 @@
 [package]
 name = "transcoder"
-version = "0.5.0"
+version = "0.5.2"
 description = "Transcoder - Video conversion tool for editing"
 authors = ["Chang-Yo"]
 edition = "2021"
