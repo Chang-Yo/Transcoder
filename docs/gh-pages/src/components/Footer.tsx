@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import { Github, FileText, AlertCircle } from 'lucide-react';
+import { CHANGELOG_URL, ISSUES_URL, REPO_URL } from '../constants';
 
 const footerLinks = [
-  { href: 'https://github.com/Chang-Yo/Transcoder', label: 'GitHub', icon: <Github size={16} /> },
-  { href: 'https://github.com/Chang-Yo/Transcoder/blob/main/docs/CHANGELOG.md', label: 'Changelog', icon: <FileText size={16} /> },
+  { href: REPO_URL, label: 'GitHub', icon: <Github size={16} /> },
+  { href: CHANGELOG_URL, label: 'Changelog', icon: <FileText size={16} /> },
   {
-    href: 'https://github.com/Chang-Yo/Transcoder/issues',
+    href: ISSUES_URL,
     label: 'Report Issue',
     icon: <AlertCircle size={16} />,
   },

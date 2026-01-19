@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Download as DownloadIcon, ExternalLink, Check, Package, HardDrive } from 'lucide-react';
+import { APP_VERSION, DOWNLOAD_URL } from '../constants';
 
 interface Requirement {
   id: string;
@@ -8,10 +9,10 @@ interface Requirement {
 }
 
 const requirements: Requirement[] = [
-  { id: 'windows', icon: <Check size={18} />, text: 'Windows 10 or later (64-bit)' },
+  { id: 'windows', icon: <Check size={18} />, text: 'Windows 10/11 (64-bit)' },
   { id: 'no-install', icon: <Check size={18} />, text: 'No installation required' },
   { id: 'ffmpeg', icon: <Check size={18} />, text: 'FFmpeg bundled' },
-  { id: 'disk-space', icon: <Check size={18} />, text: '~100MB disk space' },
+  { id: 'disk-space', icon: <Check size={18} />, text: '~70 MB download size' },
 ];
 
 export function Download() {
@@ -31,7 +32,7 @@ export function Download() {
           transition={{ duration: 0.4 }}
         >
           <motion.a
-            href="https://github.com/Chang-Yo/Transcoder/releases"
+            href={DOWNLOAD_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="download-btn"
@@ -40,7 +41,7 @@ export function Download() {
           >
             <DownloadIcon size={24} />
             <div className="download-text">
-              <span className="download-version">Download v0.6.0</span>
+              <span className="download-version">Download v{APP_VERSION}</span>
               <span className="download-meta">Windows • Portable</span>
             </div>
             <ExternalLink size={20} className="download-icon" />

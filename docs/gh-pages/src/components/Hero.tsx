@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Download, Github } from 'lucide-react';
+import { APP_VERSION, REPO_URL } from '../constants';
 
 export function Hero() {
   const container = {
@@ -44,10 +45,10 @@ export function Hero() {
           whileTap={{ scale: 0.98 }}
         >
           <Download size={20} />
-          Download v0.6.0
+          Download v{APP_VERSION}
         </motion.a>
         <motion.a
-          href="https://github.com/Chang-Yo/Transcoder"
+          href={REPO_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="btn btn-secondary"

@@ -8,7 +8,7 @@
 
 | 文件                                                                                            | 大小   | 说明                         |
 | ----------------------------------------------------------------------------------------------- | ------ | ---------------------------- |
-| [transcoder-v0.5.0-windows.zip](../../releases/download/v0.5.0/transcoder-v0.5.0-windows.zip)       | ~70 MB | **推荐** — 解压即可运行      |
+| [transcoder-v0.5.1-windows.zip](../../releases/download/v0.5.1/transcoder-v0.5.1-windows.zip)       | ~70 MB | **推荐** — 解压即可运行      |
 
 **系统要求：** Windows 10/11 (64-bit)
 

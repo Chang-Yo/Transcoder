@@ -2,13 +2,14 @@ import { motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { ThemeToggle } from './ThemeToggle';
+import { REPO_URL } from '../constants';
 
 const navItems = [
   { href: '#features', label: 'Features' },
   { href: '#presets', label: 'Presets' },
   { href: '#faq', label: 'FAQ' },
   { href: '#download', label: 'Download' },
-  { href: 'https://github.com/Chang-Yo/Transcoder', label: 'GitHub', external: true },
+  { href: REPO_URL, label: 'GitHub', external: true },
 ];
 
 export function Header() {

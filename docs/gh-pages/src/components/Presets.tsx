@@ -29,7 +29,7 @@ const presets: Preset[] = [
     useCase: 'Storage-constrained workflows',
   },
   {
-    name: 'ProRes Proxy',
+    name: 'ProRes 422 Proxy',
     recommended: false,
     specs: '8-bit · 4:2:0 · AAC',
     bitrate: '~36 Mbps @ 1080p',
@@ -48,7 +48,7 @@ const presets: Preset[] = [
     name: 'H.264 CRF 18',
     recommended: false,
     specs: '8-bit · 4:2:0 · AAC',
-    bitrate: '~25 Mbps @ 1080p',
+    bitrate: 'Variable (CRF 18)',
     description: 'High quality H.264 for web sharing. Not ideal for editing due to GOP structure.',
     useCase: 'Web sharing, final delivery',
   },
