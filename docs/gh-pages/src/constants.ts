@@ -1,4 +1,4 @@
-export const APP_VERSION = '0.5.1';
+export const APP_VERSION = '0.5.2';
 export const RELEASE_TAG = `v${APP_VERSION}`;
 export const REPO_URL = 'https://github.com/Chang-Yo/Transcoder';
 export const RELEASES_URL = `${REPO_URL}/releases`;

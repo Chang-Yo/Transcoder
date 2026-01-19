@@ -8,6 +8,7 @@ This is an **Transcoder** - a desktop application built with **Tauri + Rust + Ty
 
 **Key Philosophy**: Intent-driven, not parameter-driven. Users select "I want to edit," not "I want to set encoding parameters." The tool handles all ffmpeg internals automatically.
 
+Use `src-tauri/Cargo.toml` as the only place to set the version. And always keep the file updated firstly
 ---
 
 ## Architecture

@@ -26,12 +26,12 @@ Call this skill when:
    - Review recent commits and changes since last release
    - Present summary to user for confirmation
 
-2. **Gather release info**
-   - Ask user for version number (default: current version from Cargo.toml)
-   - Confirm release summary and version before proceeding
+2. **Gather release info (single source of truth)**
+   - Use `src-tauri/Cargo.toml` as the only place to set the version
+   - Confirm release summary before proceeding
 
 3. **Update documentation**
-   - `README.md` - update version info if needed
+   - `README.md` - update version info from `src-tauri/Cargo.toml` if needed
    - `CHANGELOG.md` - add new release entry with changes summary
    - `docs/gh-pages/` - update documentation site if applicable
    - Ask user to confirm any uncertain information
@@ -71,9 +71,9 @@ Call this skill when:
    - The `ffmpeg/` folder and its contents remain unchanged
 
 9. **Update files + create zip (single command)**
-   - Choose `{version}` by matching the existing zip naming pattern in `dist-release/`
+   - `{version}` is read from `src-tauri/Cargo.toml`
    ```powershell
-   powershell -Command "$version='{version}'; Copy-Item -Force src-tauri\target\release\transcoder.exe dist-release\transcoder.exe; Copy-Item -Force README.md dist-release\README.md; Compress-Archive -Force -Path dist-release\transcoder.exe,dist-release\README.md,dist-release\ffmpeg -DestinationPath dist-release\transcoder-v$version-windows.zip"
+   powershell -Command "$version=(Get-Content src-tauri\Cargo.toml | Select-String -Pattern '^version\s*=\s*""(.+)""' | ForEach-Object { $_.Matches[0].Groups[1].Value } | Select-Object -First 1); if (-not $version) { throw 'Version not found in src-tauri/Cargo.toml' }; Copy-Item -Force src-tauri\target\release\transcoder.exe dist-release\transcoder.exe; Copy-Item -Force README.md dist-release\README.md; Compress-Archive -Force -Path dist-release\transcoder.exe,dist-release\README.md,dist-release\ffmpeg -DestinationPath dist-release\transcoder-v$version-windows.zip"
    ```
 
 10. **Cleanup old archives**

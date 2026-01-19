@@ -12,7 +12,7 @@ const requirements: Requirement[] = [
   { id: 'windows', icon: <Check size={18} />, text: 'Windows 10/11 (64-bit)' },
   { id: 'no-install', icon: <Check size={18} />, text: 'No installation required' },
   { id: 'ffmpeg', icon: <Check size={18} />, text: 'FFmpeg bundled' },
-  { id: 'disk-space', icon: <Check size={18} />, text: '~70 MB download size' },
+  { id: 'disk-space', icon: <Check size={18} />, text: '~72 MB download size' },
 ];
 
 export function Download() {
